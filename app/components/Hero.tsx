@@ -14,7 +14,7 @@ const Hero = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
   return (
-    <section id="services-section" className="relative w-full h-screen min-h-[600px] flex flex-col justify-between overflow-hidden bg-black font-sans">
+    <section className="relative w-full h-screen min-h-[600px] flex flex-col justify-between overflow-hidden bg-black font-sans">
       {/* Background Video */}
       <video
         autoPlay
