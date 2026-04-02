@@ -1,4 +1,5 @@
 import Hero from "./components/Hero";
+import Header from "./components/Header";
 import AboutSection from "./components/AboutSection";
 import ServicesSection from "./components/ServicesSection";
 import LuxuryUniquenessSection from "./components/LuxuryUniquenessSection";
@@ -9,6 +10,7 @@ import ChatBot from "./components/ChatBot";
 export default function Home() {
   return (
     <div className="min-h-screen bg-black">
+      <Header />
       <Hero />
 
       <div className="bg-white">

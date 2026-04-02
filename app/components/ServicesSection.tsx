@@ -264,8 +264,8 @@ const ServicesSection = () => {
         <span className="text-sm tracking-widest uppercase text-[#c9a87c] font-semibold mb-4 block">
           What We Do
         </span>
-        <h2 className="text-4xl md:text-5xl font-semibold text-white">
-          Everything <span className="text-[#c9a87c]">Beauty</span>
+        <h2 className="text-4xl md:text-5xl font-serif text-white">
+          Everything <span className="italic text-[#c9a87c]">Beauty</span>
         </h2>
         <p className="mt-4 text-gray-400 max-w-xl">
           Four categories. One standard. Your transformation starts here.

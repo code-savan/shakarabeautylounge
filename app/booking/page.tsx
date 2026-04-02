@@ -255,27 +255,27 @@ export default function BookingPage() {
       </section>
 
       {/* Progress Steps */}
-      <div className="sticky top-0 z-40 bg-white border-b border-gray-100">
-        <div className="max-w-4xl mx-auto px-4 py-4">
+      <div className="sticky top-0 z-40 bg-white border-b border-gray-100 overflow-x-auto">
+        <div className="max-w-4xl mx-auto px-4 py-4 min-w-max">
           <div className="flex items-center justify-center gap-2">
             {steps.map((step, idx) => (
               <div key={step.id} className="flex items-center">
-                <div className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                <div className={`flex items-center gap-2 px-3 md:px-4 py-2 rounded-full text-xs md:text-sm font-medium transition-colors whitespace-nowrap ${
                   currentStep === step.id
                     ? 'bg-black text-white'
                     : currentStep > step.id
                       ? 'bg-gray-100 text-gray-900'
                       : 'bg-gray-50 text-gray-400'
                 }`}>
-                  <span className={`w-5 h-5 rounded-full flex items-center justify-center text-xs ${
+                  <span className={`w-4 h-4 md:w-5 md:h-5 rounded-full flex items-center justify-center text-xs ${
                     currentStep > step.id ? 'bg-black text-white' : 'border border-current'
                   }`}>
                     {currentStep > step.id ? '✓' : step.id}
                   </span>
-                  {step.label}
+                  <span className="hidden sm:inline">{step.label}</span>
                 </div>
                 {idx < steps.length - 1 && (
-                  <div className={`w-8 h-px mx-2 ${currentStep > step.id ? 'bg-black' : 'bg-gray-200'}`} />
+                  <div className={`w-4 md:w-8 h-px mx-1 md:mx-2 ${currentStep > step.id ? 'bg-black' : 'bg-gray-200'}`} />
                 )}
               </div>
             ))}
@@ -436,12 +436,12 @@ export default function BookingPage() {
               <div>
                 <h3 className="font-medium text-gray-900 mb-4">Available times</h3>
                 {selectedDate ? (
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                     {timeSlots.map(time => (
                       <button
                         key={time}
                         onClick={() => setSelectedTime(time)}
-                        className={`py-3 px-4 rounded-xl text-sm font-medium transition-all border ${
+                        className={`py-3 px-2 sm:px-4 rounded-xl text-sm font-medium transition-all border ${
                           selectedTime === time
                             ? 'bg-black text-white border-black'
                             : 'bg-white text-gray-700 border-gray-200 hover:border-gray-400'
@@ -452,7 +452,7 @@ export default function BookingPage() {
                     ))}
                   </div>
                 ) : (
-                  <div className="h-full flex items-center justify-center text-gray-400 border border-gray-200 rounded-xl border-dashed">
+                  <div className="h-full flex items-center justify-center text-gray-400 border border-gray-200 rounded-xl border-dashed min-h-[200px]">
                     <p>Select a date first</p>
                   </div>
                 )}
