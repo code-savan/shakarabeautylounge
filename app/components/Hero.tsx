@@ -14,7 +14,7 @@ const Hero = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
   return (
-    <section className="relative w-full h-screen min-h-[600px] flex flex-col justify-between overflow-hidden bg-black font-sans">
+    <section id="services-section" className="relative w-full h-screen min-h-[600px] flex flex-col justify-between overflow-hidden bg-black font-sans">
       {/* Background Video */}
       <video
         autoPlay
@@ -84,7 +84,16 @@ const Hero = () => {
         </p> */}
         <div className="mt-6 flex flex-wrap gap-4 md:gap-6">
           {['Hair', 'Nails', 'Spa', 'Lashes'].map((service) => (
-            <div key={service} className="flex flex-col items-center group cursor-pointer">
+            <div
+              key={service}
+              className="flex flex-col items-center group cursor-pointer"
+              onClick={() => {
+                const element = document.getElementById('services-section');
+                if (element) {
+                  element.scrollIntoView({ behavior: 'smooth' });
+                }
+              }}
+            >
               <div className="relative w-12 h-12 md:w-16 md:h-16">
                 {/* Outer ring - IG story style */}
                 <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-yellow-400 via-red-500 to-pink-500 p-0.5 group-hover:scale-110 transition-transform duration-300">

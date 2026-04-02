@@ -1,6 +1,13 @@
 "use client";
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { Poppins } from 'next/font/google';
+
+const poppins = Poppins({
+  variable: "--font-poppins",
+  weight: ["300", "400", "500", "600", "700"],
+  subsets: ["latin"],
+});
 
 interface VideoSet {
   src: string;
@@ -65,7 +72,6 @@ const ServicesSection = () => {
   const [progress, setProgress] = useState<number[]>(services.map(() => 0));
   const [isMobile, setIsMobile] = useState(false);
   const videoRefs = useRef<(HTMLVideoElement | null)[]>([]);
-  const intervalRefs = useRef<(NodeJS.Timeout | null)[]>([]);
 
   useEffect(() => {
     const checkMobile = () => {
@@ -78,9 +84,7 @@ const ServicesSection = () => {
 
   useEffect(() => {
     return () => {
-      intervalRefs.current.forEach(interval => {
-        if (interval) clearInterval(interval);
-      });
+      // Cleanup
     };
   }, []);
 
@@ -98,64 +102,43 @@ const ServicesSection = () => {
     }
   }, []);
 
-  const startProgress = useCallback((cardIndex: number) => {
-    if (intervalRefs.current[cardIndex]) {
-      clearInterval(intervalRefs.current[cardIndex]!);
-    }
+  // Handle video timeupdate for accurate progress tracking
+  const handleTimeUpdate = useCallback((cardIndex: number) => {
+    const video = videoRefs.current[cardIndex];
+    if (!video || !video.duration) return;
 
-    const currentVideoIndex = videoIndices[cardIndex];
-    const currentVideo = services[cardIndex].videos[currentVideoIndex];
-    const duration = currentVideo.duration * 1000;
-    const updateInterval = 50;
-    let elapsed = 0;
+    const newProgress = (video.currentTime / video.duration) * 100;
+    setProgress(prev => {
+      const newProgressArr = [...prev];
+      newProgressArr[cardIndex] = Math.min(newProgress, 100);
+      return newProgressArr;
+    });
+  }, []);
 
-    intervalRefs.current[cardIndex] = setInterval(() => {
-      elapsed += updateInterval;
-      const newProgress = (elapsed / duration) * 100;
-
-      setProgress(prev => {
-        const newProgressArr = [...prev];
-        newProgressArr[cardIndex] = Math.min(newProgress, 100);
-        return newProgressArr;
-      });
-
-      if (elapsed >= duration) {
-        setVideoIndices(prev => {
-          const newIndices = [...prev];
-          newIndices[cardIndex] = (newIndices[cardIndex] + 1) % services[cardIndex].videos.length;
-          return newIndices;
-        });
-
-        setProgress(prev => {
-          const newProgressArr = [...prev];
-          newProgressArr[cardIndex] = 0;
-          return newProgressArr;
-        });
-
-        elapsed = 0;
-      }
-    }, updateInterval);
-  }, [services, videoIndices]);
-
-  const stopProgress = useCallback((cardIndex: number) => {
-    if (intervalRefs.current[cardIndex]) {
-      clearInterval(intervalRefs.current[cardIndex]!);
-      intervalRefs.current[cardIndex] = null;
-    }
+  // Handle video ended event
+  const handleVideoEnded = useCallback((cardIndex: number) => {
+    setVideoIndices(prev => {
+      const newIndices = [...prev];
+      newIndices[cardIndex] = (newIndices[cardIndex] + 1) % services[cardIndex].videos.length;
+      return newIndices;
+    });
+    setProgress(prev => {
+      const newProgressArr = [...prev];
+      newProgressArr[cardIndex] = 0;
+      return newProgressArr;
+    });
   }, []);
 
   const handleMouseEnter = (index: number) => {
     if (isMobile) return;
     setActiveCard(index);
     playVideo(index);
-    startProgress(index);
   };
 
   const handleMouseLeave = (index: number) => {
     if (isMobile) return;
     setActiveCard(null);
     pauseVideo(index);
-    stopProgress(index);
     setProgress(prev => {
       const newProgress = [...prev];
       newProgress[index] = 0;
@@ -172,7 +155,6 @@ const ServicesSection = () => {
       setActiveCard(index);
       setIsMuted(false);
       playVideo(index);
-      startProgress(index);
     }
   };
 
@@ -276,16 +258,16 @@ const ServicesSection = () => {
   }, [activeCard]);
 
   return (
-    <section className="w-full bg-[#1a1512] py-24 overflow-hidden">
+    <section className={`w-full bg-[#1a1512] py-24 overflow-hidden ${poppins.variable} font-sans`}>
       {/* Section Header */}
       <div className="px-4 md:px-20 mb-12">
-        <span className="text-sm font-[family-name:var(--font-figtree)] tracking-widest uppercase text-[#c9a87c] font-bold mb-4 block">
+        <span className="text-sm tracking-widest uppercase text-[#c9a87c] font-semibold mb-4 block">
           What We Do
         </span>
-        <h2 className="text-5xl md:text-7xl font-[family-name:var(--font-cormorant)] italic text-white">
-          Everything <span className="not-italic text-[#c9a87c]">Beauty</span>
+        <h2 className="text-4xl md:text-5xl font-semibold text-white">
+          Everything <span className="text-[#c9a87c]">Beauty</span>
         </h2>
-        <p className="mt-4 text-gray-400 font-[family-name:var(--font-figtree)] max-w-xl">
+        <p className="mt-4 text-gray-400 max-w-xl">
           Four categories. One standard. Your transformation starts here.
         </p>
       </div>
@@ -310,6 +292,8 @@ const ServicesSection = () => {
                   muted={isMuted}
                   loop={false}
                   playsInline
+                  onTimeUpdate={() => handleTimeUpdate(index)}
+                  onEnded={() => handleVideoEnded(index)}
                 />
 
                 {/* Click Zones for Navigation */}
@@ -375,10 +359,10 @@ const ServicesSection = () => {
 
                 {/* Gradient Overlay */}
                 <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent pt-20 pb-6 px-4 z-20">
-                  <h3 className="text-3xl font-[family-name:var(--font-cormorant)] text-white mb-1">
+                  <h3 className="text-2xl font-semibold text-white mb-1">
                     {service.title}
                   </h3>
-                  <p className="text-[#c9a87c] font-[family-name:var(--font-figtree)] font-semibold text-sm">
+                  <p className="text-[#c9a87c] font-medium text-sm">
                     {service.tagline}
                   </p>
                 </div>
@@ -403,7 +387,7 @@ const ServicesSection = () => {
       <div className="px-4 md:px-20 mt-12 text-center md:text-left">
         <button className="group relative inline-flex items-center gap-3 bg-transparent border-2 border-[#c9a87c] text-[#c9a87c] px-8 py-4 rounded-full overflow-hidden transition-all duration-300 hover:text-[#1a1512] cursor-pointer">
           <span className="absolute inset-0 bg-[#c9a87c] transform -translate-x-full group-hover:translate-x-0 transition-transform duration-300 ease-out"></span>
-          <span className="relative font-[family-name:var(--font-figtree)] cursor-pointer font-bold uppercase tracking-wider text-xs">
+          <span className="relative font-semibold uppercase tracking-wider text-xs">
             Explore All Services
           </span>
           <svg
