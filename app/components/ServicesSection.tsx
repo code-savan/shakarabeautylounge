@@ -258,7 +258,7 @@ const ServicesSection = () => {
   }, [activeCard]);
 
   return (
-    <section className={`w-full bg-[#1a1512] py-24 overflow-hidden ${poppins.variable} font-sans`}>
+    <section id="services-section" className={`w-full bg-[#1a1512] py-24 overflow-hidden ${poppins.variable} font-sans`}>
       {/* Section Header */}
       <div className="px-4 md:px-20 mb-12">
         <span className="text-sm tracking-widest uppercase text-[#c9a87c] font-semibold mb-4 block">
