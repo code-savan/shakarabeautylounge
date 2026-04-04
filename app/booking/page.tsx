@@ -117,6 +117,7 @@ export default function BookingPage() {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [paymentType, setPaymentType] = useState<'deposit' | 'full'>('deposit');
 
   // Load cached services from localStorage on mount
   useEffect(() => {
@@ -208,6 +209,18 @@ export default function BookingPage() {
     await new Promise(r => setTimeout(r, 1500));
     setIsSubmitting(false);
     setSubmitted(true);
+  };
+
+  const generateWhatsAppLink = () => {
+    const amount = totalPrice <= 10000 ? totalPrice : paymentType === 'deposit' ? 10000 : totalPrice;
+    const servicesList = selectedServices.map(id => {
+      const s = services.find(x => x.id === id)!;
+      return `- ${s.name} (${formatPrice(s.price)})`;
+    }).join('\n');
+
+    const message = `Hi Shakara Beauty Lounge!%0A%0AI have made a payment for my booking.%0A%0A*Booking Details:*%0AName: ${formData.firstName} ${formData.lastName}%0APhone: ${formData.phone}%0ADate: ${selectedDate ? new Date(selectedDate).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' }) : '-'}%0ATime: ${selectedTime}%0A%0A*Services:*%0A${servicesList}%0A%0A*Payment:*%0AAmount Paid: ${formatPrice(amount)}%0ATotal: ${formatPrice(totalPrice)}%0A${paymentType === 'deposit' && totalPrice > 10000 ? 'Payment Type: Deposit (₦10,000)' : 'Payment Type: Full Payment'}%0A%0AI will send the screenshot proof of payment shortly. Thank you!`;
+
+    return `https://wa.me/2348144209739?text=${message}`;
   };
 
   if (submitted) {
@@ -530,10 +543,11 @@ export default function BookingPage() {
           <div className={`${currentStep === 4 ? 'block' : 'hidden'}`}>
             <div className="mb-8">
               <h2 className="text-2xl font-semibold text-gray-900 mb-2">Confirm your booking</h2>
-              <p className="text-gray-500">Review your appointment details</p>
+              <p className="text-gray-500">Review your appointment details and complete payment</p>
             </div>
 
-            <div className="max-w-lg mx-auto">
+            <div className="max-w-lg mx-auto space-y-6">
+              {/* Booking Summary */}
               <div className="bg-gray-50 rounded-2xl p-6 space-y-4">
                 {/* Services */}
                 <div>
@@ -583,23 +597,126 @@ export default function BookingPage() {
                 </div>
               </div>
 
-              <button
-                onClick={handleSubmit}
-                disabled={isSubmitting}
-                className="w-full mt-6 bg-black text-white py-4 rounded-full font-medium hover:bg-gray-800 transition-colors disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
+              {/* Payment Rules Notice */}
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+                <p className="text-sm text-amber-800">
+                  <span className="font-semibold">Payment Policy:</span>
+                  {totalPrice <= 10000 ? (
+                    <> Services ₦10,000 and below require <span className="font-semibold">100% payment</span>.</>
+                  ) : (
+                    <> Services above ₦10,000: Pay <span className="font-semibold">₦10,000 deposit</span> to lock your slot, or pay the full amount.</>
+                  )}
+                </p>
+              </div>
+
+              {/* Payment Type Selection (only for services > 10k) */}
+              {totalPrice > 10000 && (
+                <div className="space-y-3">
+                  <p className="text-sm font-medium text-gray-700">Choose payment option:</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      className={`p-4 rounded-xl border-2 text-left transition-all ${paymentType === 'deposit' ? 'border-black bg-black/5' : 'border-gray-200 hover:border-gray-300'}`}
+                      onClick={() => setPaymentType('deposit')}
+                    >
+                      <p className="font-semibold text-gray-900">₦10,000 Deposit</p>
+                      <p className="text-xs text-gray-500 mt-1">Lock your slot</p>
+                    </button>
+                    <button
+                      type="button"
+                      className={`p-4 rounded-xl border-2 text-left transition-all ${paymentType === 'full' ? 'border-black bg-black/5' : 'border-gray-200 hover:border-gray-300'}`}
+                      onClick={() => setPaymentType('full')}
+                    >
+                      <p className="font-semibold text-gray-900">Full Payment</p>
+                      <p className="text-xs text-gray-500 mt-1">{formatPrice(totalPrice)}</p>
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Amount to Pay */}
+              <div className="bg-black text-white rounded-2xl p-6">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <p className="text-sm text-white/70">Amount to Pay</p>
+                    <p className="text-xs text-white/50 mt-1">
+                      {paymentType === 'deposit' ? 'Deposit to lock slot' : 'Full payment required'}
+                    </p>
+                  </div>
+                  <span className="text-3xl font-bold">
+                    {formatPrice(totalPrice <= 10000 ? totalPrice : paymentType === 'deposit' ? 10000 : totalPrice)}
+                  </span>
+                </div>
+              </div>
+
+              {/* Bank Details */}
+              <div className="bg-gray-50 rounded-xl p-5 space-y-3">
+                <p className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-500">
+                    <rect x="2" y="5" width="20" height="14" rx="2"/>
+                    <line x1="2" y1="10" x2="22" y2="10"/>
+                  </svg>
+                  Bank Transfer Details
+                </p>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Bank</span>
+                    <span className="font-medium text-gray-900">Zenith Bank</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Account Name</span>
+                    <span className="font-medium text-gray-900">Shakara Beauty Lounge</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-500">Account Number</span>
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono font-medium text-gray-900">1234567890</span>
+                      <button
+                        onClick={() => navigator.clipboard.writeText('1234567890')}
+                        className="text-xs text-gray-500 hover:text-black transition-colors"
+                        title="Copy account number"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Screenshot Proof Notice */}
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex gap-3">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-blue-600 flex-shrink-0 mt-0.5">
+                  <circle cx="12" cy="12" r="10"/>
+                  <path d="M12 16v-4"/>
+                  <path d="M12 8h.01"/>
+                </svg>
+                <div>
+                  <p className="text-sm font-medium text-blue-900">Payment Proof Required</p>
+                  <p className="text-xs text-blue-700 mt-1">
+                    After making payment, click the button below to notify us. You&apos;ll need to send a screenshot of your payment receipt via WhatsApp to complete your booking.
+                  </p>
+                </div>
+              </div>
+
+              {/* Finalize Button */}
+              <a
+                href={generateWhatsAppLink()}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full block bg-green-600 hover:bg-green-700 text-white py-4 rounded-full font-medium transition-colors flex items-center justify-center gap-2 cursor-pointer"
               >
-                {isSubmitting ? (
-                  <>
-                    <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                      <circle className="opacity-25" cx="12" cy="12" r="10"/>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
-                    </svg>
-                    Processing...
-                  </>
-                ) : (
-                  'Confirm Booking'
-                )}
-              </button>
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" className="text-white">
+                  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
+                </svg>
+                I&apos;ve Paid — Send Confirmation via WhatsApp
+              </a>
+
+              <p className="text-xs text-gray-500 text-center">
+                Clicking this button will open WhatsApp with a pre-filled message.
+              </p>
             </div>
           </div>
 
