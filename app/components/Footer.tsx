@@ -78,6 +78,7 @@ Mabushi-Wuse 2, Abuja, FCT</p>
               width={256}
               height={100}
               className="object-contain"
+              style={{ width: 'auto', height: 'auto' }}
             />
           </div>
             <div className="flex items-center gap-2 mb-4">

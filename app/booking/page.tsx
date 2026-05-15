@@ -207,11 +207,12 @@ export default function BookingPage() {
 
   const handleNextStep = () => {
     if (currentStep < 4) {
-      setCurrentStep(currentStep + 1);
+      const nextStep = currentStep + 1;
+      setCurrentStep(nextStep);
       setTimeout(() => {
-        const element = document.getElementById('booking-steps-container');
+        const element = document.getElementById(`step-${nextStep}`);
         if (element) {
-          const y = element.getBoundingClientRect().top + window.scrollY - 80;
+          const y = element.getBoundingClientRect().top + window.scrollY - 100;
           window.scrollTo({ top: y, behavior: 'smooth' });
         }
       }, 50);
@@ -283,45 +284,33 @@ export default function BookingPage() {
         </div>
       </section>
 
-      {/* Progress Steps */}
-      <div id="booking-steps-container" className="sticky top-0 z-40 bg-white border-b border-gray-100 overflow-x-auto">
-        <div className="max-w-4xl mx-auto px-4 py-4 min-w-max">
-          <div className="flex items-center justify-center gap-2">
-            {steps.map((step, idx) => (
-              <div key={step.id} className="flex items-center">
-                <div className={`flex items-center gap-2 px-3 md:px-4 py-2 rounded-full text-xs md:text-sm font-medium transition-colors whitespace-nowrap ${
-                  currentStep === step.id
-                    ? 'bg-black text-white'
-                    : currentStep > step.id
-                      ? 'bg-gray-100 text-gray-900'
-                      : 'bg-gray-50 text-gray-400'
-                }`}>
-                  <span className={`w-4 h-4 md:w-5 md:h-5 rounded-full flex items-center justify-center text-xs ${
-                    currentStep > step.id ? 'bg-black text-white' : 'border border-current'
-                  }`}>
-                    {currentStep > step.id ? '✓' : step.id}
-                  </span>
-                  <span className="hidden sm:inline">{step.label}</span>
-                </div>
-                {idx < steps.length - 1 && (
-                  <div className={`w-4 md:w-8 h-px mx-1 md:mx-2 ${currentStep > step.id ? 'bg-black' : 'bg-gray-200'}`} />
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Booking Content */}
-      <section className="py-12 px-4">
-        <div className="max-w-4xl mx-auto">
+      {/* Accordion Steps Container */}
+      <section className="py-12 px-4" id="booking-steps-container">
+        <div className="max-w-3xl mx-auto space-y-6">
 
           {/* Step 1: Services */}
-          <div className={`${currentStep === 1 ? 'block' : 'hidden'}`}>
-            <div className="mb-8">
-              <h2 className="text-2xl font-semibold text-gray-900 mb-2">Choose your services</h2>
-              <p className="text-gray-500">Select one or more services for your appointment</p>
+          <div id="step-1" className={`border rounded-2xl overflow-hidden transition-all duration-300 ${currentStep === 1 ? 'border-gray-200 shadow-[0_8px_30px_rgb(0,0,0,0.12)] bg-white' : currentStep > 1 ? 'border-gray-200 bg-white hover:border-gray-300' : 'border-gray-100 bg-gray-50 opacity-50 pointer-events-none'}`}>
+            <div 
+              className={`p-6 flex items-center justify-between ${currentStep > 1 ? 'cursor-pointer' : ''}`}
+              onClick={() => currentStep > 1 && setCurrentStep(1)}
+            >
+              <div className="flex items-center gap-4">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center font-medium ${currentStep >= 1 ? 'bg-black text-white' : 'bg-gray-200 text-gray-500'}`}>
+                  {currentStep > 1 ? '✓' : '1'}
+                </div>
+                <div>
+                  <h2 className={`text-xl font-semibold ${currentStep === 1 ? 'text-gray-900' : 'text-gray-700'}`}>Choose your services</h2>
+                  {currentStep !== 1 && selectedServices.length > 0 && (
+                    <p className="text-sm text-gray-500 mt-1">{selectedServices.length} service(s) selected - {formatPrice(totalPrice)}</p>
+                  )}
+                </div>
+              </div>
+              {currentStep > 1 && <span className="text-sm text-black font-medium">Edit</span>}
             </div>
+
+            <div className={`transition-all duration-300 ${currentStep === 1 ? 'block' : 'hidden'}`}>
+              <div className="p-6 pt-0 border-t border-gray-100">
+                <p className="text-gray-500 mb-6 mt-4">Select one or more services for your appointment</p>
 
             {/* Search */}
             <div className="relative mb-4">
@@ -375,14 +364,45 @@ export default function BookingPage() {
             {filteredServices.length === 0 && (
               <p className="text-center text-gray-500 py-8">No services found</p>
             )}
-          </div>
 
-          {/* Step 2: Date & Time */}
-          <div className={`${currentStep === 2 ? 'block' : 'hidden'}`}>
-            <div className="mb-8">
-              <h2 className="text-2xl font-semibold text-gray-900 mb-2">Select date & time</h2>
-              <p className="text-gray-500">Choose your preferred appointment slot</p>
+            <div className="flex justify-end mt-8 pt-6 border-t border-gray-100">
+              <button
+                onClick={handleNextStep}
+                disabled={selectedServices.length === 0}
+                className="px-8 py-3 bg-black text-white rounded-full font-medium hover:bg-gray-800 transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+              >
+                Continue
+              </button>
             </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Step 2: Date & Time */}
+      <div id="step-2" className={`border rounded-2xl overflow-hidden transition-all duration-300 ${currentStep === 2 ? 'border-gray-200 shadow-[0_8px_30px_rgb(0,0,0,0.12)] bg-white' : currentStep > 2 ? 'border-gray-200 bg-white hover:border-gray-300' : 'border-gray-100 bg-gray-50 opacity-50 pointer-events-none'}`}>
+        <div 
+          className={`p-6 flex items-center justify-between ${currentStep > 2 ? 'cursor-pointer' : ''}`}
+          onClick={() => currentStep > 2 && setCurrentStep(2)}
+        >
+          <div className="flex items-center gap-4">
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center font-medium ${currentStep >= 2 ? 'bg-black text-white' : 'bg-gray-200 text-gray-500'}`}>
+              {currentStep > 2 ? '✓' : '2'}
+            </div>
+            <div>
+              <h2 className={`text-xl font-semibold ${currentStep === 2 ? 'text-gray-900' : 'text-gray-700'}`}>Select date & time</h2>
+              {currentStep !== 2 && selectedDate && selectedTime && (
+                <p className="text-sm text-gray-500 mt-1">
+                  {new Date(selectedDate).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })} at {selectedTime}
+                </p>
+              )}
+            </div>
+          </div>
+          {currentStep > 2 && <span className="text-sm text-black font-medium">Edit</span>}
+        </div>
+
+        <div className={`transition-all duration-300 ${currentStep === 2 ? 'block' : 'hidden'}`}>
+          <div className="p-6 pt-0 border-t border-gray-100">
+            <p className="text-gray-500 mb-6 mt-4">Choose your preferred appointment slot</p>
 
             <div className="grid lg:grid-cols-2 gap-8">
               {/* Calendar */}
@@ -459,14 +479,49 @@ export default function BookingPage() {
                 )}
               </div>
             </div>
-          </div>
 
-          {/* Step 3: Details */}
-          <div className={`${currentStep === 3 ? 'block' : 'hidden'}`}>
-            <div className="mb-8">
-              <h2 className="text-2xl font-semibold text-gray-900 mb-2">Your details</h2>
-              <p className="text-gray-500">We&apos;ll use this to confirm your booking</p>
+            <div className="flex justify-between items-center mt-8 pt-6 border-t border-gray-100">
+              <button
+                onClick={() => setCurrentStep(1)}
+                className="px-6 py-3 text-gray-600 hover:text-gray-900 font-medium cursor-pointer transition-colors"
+              >
+                Back
+              </button>
+              <button
+                onClick={handleNextStep}
+                disabled={!(selectedDate && selectedTime)}
+                className="px-8 py-3 bg-black text-white rounded-full font-medium hover:bg-gray-800 transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+              >
+                Continue
+              </button>
             </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Step 3: Details */}
+      <div id="step-3" className={`border rounded-2xl overflow-hidden transition-all duration-300 ${currentStep === 3 ? 'border-gray-200 shadow-[0_8px_30px_rgb(0,0,0,0.12)] bg-white' : currentStep > 3 ? 'border-gray-200 bg-white hover:border-gray-300' : 'border-gray-100 bg-gray-50 opacity-50 pointer-events-none'}`}>
+        <div 
+          className={`p-6 flex items-center justify-between ${currentStep > 3 ? 'cursor-pointer' : ''}`}
+          onClick={() => currentStep > 3 && setCurrentStep(3)}
+        >
+          <div className="flex items-center gap-4">
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center font-medium ${currentStep >= 3 ? 'bg-black text-white' : 'bg-gray-200 text-gray-500'}`}>
+              {currentStep > 3 ? '✓' : '3'}
+            </div>
+            <div>
+              <h2 className={`text-xl font-semibold ${currentStep === 3 ? 'text-gray-900' : 'text-gray-700'}`}>Your details</h2>
+              {currentStep !== 3 && formData.firstName && (
+                <p className="text-sm text-gray-500 mt-1">{formData.firstName} {formData.lastName}</p>
+              )}
+            </div>
+          </div>
+          {currentStep > 3 && <span className="text-sm text-black font-medium">Edit</span>}
+        </div>
+
+        <div className={`transition-all duration-300 ${currentStep === 3 ? 'block' : 'hidden'}`}>
+          <div className="p-6 pt-0 border-t border-gray-100">
+            <p className="text-gray-500 mb-6 mt-4">We&apos;ll use this to confirm your booking</p>
 
             <div className="max-w-lg">
               <div className="grid grid-cols-2 gap-4 mb-4">
@@ -524,15 +579,41 @@ export default function BookingPage() {
                   placeholder="Any special requests..."
                 />
               </div>
+
+              <div className="flex justify-between items-center mt-8 pt-6 border-t border-gray-100">
+                <button
+                  onClick={() => setCurrentStep(2)}
+                  className="px-6 py-3 text-gray-600 hover:text-gray-900 font-medium cursor-pointer transition-colors"
+                >
+                  Back
+                </button>
+                <button
+                  onClick={handleNextStep}
+                  disabled={!(formData.firstName && formData.lastName && formData.phone)}
+                  className="px-8 py-3 bg-black text-white rounded-full font-medium hover:bg-gray-800 transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                >
+                  Continue
+                </button>
+              </div>
             </div>
           </div>
+        </div>
+      </div>
 
-          {/* Step 4: Confirm */}
-          <div className={`${currentStep === 4 ? 'block' : 'hidden'}`}>
-            <div className="mb-8">
-              <h2 className="text-2xl font-semibold text-gray-900 mb-2">Confirm your booking</h2>
-              <p className="text-gray-500">Review your appointment details and complete payment</p>
+      {/* Step 4: Confirm */}
+      <div id="step-4" className={`border rounded-2xl overflow-hidden transition-all duration-300 ${currentStep === 4 ? 'border-gray-200 shadow-[0_8px_30px_rgb(0,0,0,0.12)] bg-white' : 'border-gray-100 bg-gray-50 opacity-50 pointer-events-none'}`}>
+        <div className="p-6 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center font-medium ${currentStep === 4 ? 'bg-black text-white' : 'bg-gray-200 text-gray-500'}`}>
+              4
             </div>
+            <h2 className={`text-xl font-semibold ${currentStep === 4 ? 'text-gray-900' : 'text-gray-700'}`}>Confirm your booking</h2>
+          </div>
+        </div>
+
+        <div className={`transition-all duration-300 ${currentStep === 4 ? 'block' : 'hidden'}`}>
+          <div className="p-6 pt-0 border-t border-gray-100">
+            <p className="text-gray-500 mb-6 mt-4">Review your appointment details and complete payment</p>
 
             <div className="max-w-lg mx-auto space-y-6">
               {/* Booking Summary */}
@@ -706,26 +787,25 @@ export default function BookingPage() {
                 Clicking this button will open WhatsApp with a pre-filled message.
               </p>
             </div>
-          </div>
 
-          {/* Navigation Buttons */}
-          <div className="flex justify-between items-center mt-12 pt-6 border-t border-gray-100">
-            <button
-              onClick={() => setCurrentStep(Math.max(1, currentStep - 1))}
-              disabled={currentStep === 1}
-              className="px-6 py-3 text-gray-600 hover:text-gray-900 font-medium disabled:opacity-0 cursor-pointer transition-colors"
-            >
-              Back
-            </button>
-            <button
-              onClick={handleNextStep}
-              disabled={!canProceed()}
-              className="px-8 py-3 bg-black text-white rounded-full font-medium hover:bg-gray-800 transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
-            >
-              {currentStep === 4 ? 'Confirm Booking' : 'Continue'}
-            </button>
+            <div className="flex justify-between items-center mt-8 pt-6 border-t border-gray-100">
+              <button
+                onClick={() => setCurrentStep(3)}
+                className="px-6 py-3 text-gray-600 hover:text-gray-900 font-medium cursor-pointer transition-colors"
+              >
+                Back
+              </button>
+              <button
+                onClick={handleSubmit}
+                className="px-8 py-3 bg-black text-white rounded-full font-medium hover:bg-gray-800 transition-colors cursor-pointer"
+              >
+                Finish Booking
+              </button>
+            </div>
           </div>
         </div>
+      </div>
+      </div>
       </section>
 
       <Footer />
