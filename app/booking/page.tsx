@@ -118,6 +118,7 @@ export default function BookingPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [paymentType, setPaymentType] = useState<'deposit' | 'full'>('deposit');
+  const [isMobileExpanded, setIsMobileExpanded] = useState(false);
 
   // Load cached services from localStorage on mount
   useEffect(() => {
@@ -204,6 +205,21 @@ export default function BookingPage() {
     return true;
   };
 
+  const handleNextStep = () => {
+    if (currentStep < 4) {
+      setCurrentStep(currentStep + 1);
+      setTimeout(() => {
+        const element = document.getElementById('booking-steps-container');
+        if (element) {
+          const y = element.getBoundingClientRect().top + window.scrollY - 80;
+          window.scrollTo({ top: y, behavior: 'smooth' });
+        }
+      }, 50);
+    } else {
+      handleSubmit();
+    }
+  };
+
   const handleSubmit = async () => {
     setIsSubmitting(true);
     await new Promise(r => setTimeout(r, 1500));
@@ -268,7 +284,7 @@ export default function BookingPage() {
       </section>
 
       {/* Progress Steps */}
-      <div className="sticky top-0 z-40 bg-white border-b border-gray-100 overflow-x-auto">
+      <div id="booking-steps-container" className="sticky top-0 z-40 bg-white border-b border-gray-100 overflow-x-auto">
         <div className="max-w-4xl mx-auto px-4 py-4 min-w-max">
           <div className="flex items-center justify-center gap-2">
             {steps.map((step, idx) => (
@@ -306,34 +322,6 @@ export default function BookingPage() {
               <h2 className="text-2xl font-semibold text-gray-900 mb-2">Choose your services</h2>
               <p className="text-gray-500">Select one or more services for your appointment</p>
             </div>
-
-            {/* Selected Services */}
-            {selectedServices.length > 0 && (
-              <div className="mb-6 p-4 bg-gray-50 rounded-xl">
-                <p className="text-sm font-medium text-gray-700 mb-3">Selected ({selectedServices.length})</p>
-                <div className="flex flex-wrap gap-2">
-                  {selectedServices.map(id => {
-                    const service = services.find(s => s.id === id)!;
-                    return (
-                      <div key={id} className="flex items-center gap-2 bg-white px-3 py-2 rounded-lg border border-gray-200 shadow-sm">
-                        <span className="text-sm font-medium text-gray-900">{service.name}</span>
-                        <span className="text-sm text-gray-500">{formatPrice(service.price)}</span>
-                        <button onClick={() => removeService(id)} className="text-gray-400 hover:text-red-500 cursor-pointer ml-1">
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <line x1="18" y1="6" x2="6" y2="18"/>
-                            <line x1="6" y1="6" x2="18" y2="18"/>
-                          </svg>
-                        </button>
-                      </div>
-                    );
-                  })}
-                </div>
-                <div className="flex justify-between items-center mt-4 pt-3 border-t border-gray-200">
-                  <span className="text-gray-600">Total</span>
-                  <span className="text-xl font-semibold text-gray-900">{formatPrice(totalPrice)}</span>
-                </div>
-              </div>
-            )}
 
             {/* Search */}
             <div className="relative mb-4">
@@ -730,7 +718,7 @@ export default function BookingPage() {
               Back
             </button>
             <button
-              onClick={() => currentStep < 4 ? setCurrentStep(currentStep + 1) : handleSubmit()}
+              onClick={handleNextStep}
               disabled={!canProceed()}
               className="px-8 py-3 bg-black text-white rounded-full font-medium hover:bg-gray-800 transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
             >
@@ -742,6 +730,70 @@ export default function BookingPage() {
 
       <Footer />
       <ChatBot />
+
+      {/* Floating Selected Services */}
+      {selectedServices.length > 0 && currentStep === 1 && (
+        <div className={`fixed z-50 transition-all duration-300 bg-white border border-gray-100 shadow-[0_-8px_30px_rgba(0,0,0,0.12)] sm:shadow-[0_8px_30px_rgb(0,0,0,0.12)] ${
+          'bottom-0 left-0 right-0 rounded-t-3xl sm:bottom-6 sm:left-6 sm:right-auto sm:w-80 sm:rounded-3xl'
+        }`}>
+          {/* Header (always visible) */}
+          <div 
+            className="p-6 flex items-center justify-between cursor-pointer"
+            onClick={() => setIsMobileExpanded(!isMobileExpanded)}
+          >
+            <div>
+              <p className="text-sm font-medium text-gray-900">Selected Services ({selectedServices.length})</p>
+              <p className="text-sm font-semibold text-gray-900 mt-0.5">{formatPrice(totalPrice)}</p>
+            </div>
+            <button 
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gray-50 hover:bg-gray-100 text-xs font-medium text-gray-700 transition-colors"
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsMobileExpanded(!isMobileExpanded);
+              }}
+            >
+              {isMobileExpanded ? (
+                <>
+                  <span>Compress</span>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <polyline points="18 15 12 9 6 15"></polyline>
+                  </svg>
+                </>
+              ) : (
+                <>
+                  <span>Expand</span>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                  </svg>
+                </>
+              )}
+            </button>
+          </div>
+
+          {/* Content (collapsible) */}
+          <div className={`overflow-hidden transition-all duration-300 ${isMobileExpanded ? 'max-h-[60vh] overflow-y-auto' : 'max-h-0'}`}>
+            <div className="p-6 pt-0 border-t border-gray-100 flex flex-col gap-3 mt-2">
+              {selectedServices.map(id => {
+                const service = services.find(s => s.id === id)!;
+                return (
+                  <div key={id} className="flex justify-between items-center bg-gray-50 p-3 rounded-xl border border-gray-100/50">
+                    <div className="pr-2">
+                      <p className="text-sm font-medium text-gray-900">{service.name}</p>
+                      <p className="text-xs text-gray-500 mt-0.5">{formatPrice(service.price)}</p>
+                    </div>
+                    <button onClick={(e) => { e.stopPropagation(); removeService(id); }} className="text-gray-400 hover:text-red-500 p-1.5 hover:bg-red-50 rounded-lg flex-shrink-0 cursor-pointer transition-colors">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                      </svg>
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

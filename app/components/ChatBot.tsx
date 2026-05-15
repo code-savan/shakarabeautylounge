@@ -16,7 +16,7 @@ const ChatBot = () => {
   };
 
   return (
-    <div className="fixed bottom-5 right-5 z-[100]">
+    <div className="fixed bottom-24 sm:bottom-5 right-5 z-[100]">
       {/* Popup Menu */}
       {isOpen && (
         <div className="absolute bottom-20 right-0 bg-white rounded-2xl shadow-2xl p-4 w-64 mb-2 animate-in fade-in slide-in-from-bottom-4 duration-200">
