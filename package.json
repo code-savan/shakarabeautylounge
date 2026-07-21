@@ -9,10 +9,17 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@paystack/inline-js": "^2.23.1",
     "lucide-react": "^1.7.0",
-    "next": "16.2.2",
+    "next": "16.2.10",
     "react": "19.2.4",
     "react-dom": "19.2.4"
+  },
+  "overrides": {
+    "@babel/core": "7.29.7",
+    "brace-expansion": "1.1.16",
+    "js-yaml": "4.3.0",
+    "postcss": "8.5.16"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
@@ -21,7 +28,7 @@
     "@types/react-dom": "^19",
     "babel-plugin-react-compiler": "1.0.0",
     "eslint": "^9",
-    "eslint-config-next": "16.2.2",
+    "eslint-config-next": "16.2.10",
     "tailwindcss": "^4",
     "typescript": "^5"
   }
