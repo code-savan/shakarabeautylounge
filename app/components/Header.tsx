@@ -56,7 +56,7 @@ const Header = () => {
                 alt="Shakara Beauty Lounge"
                 width={160}
                 height={48}
-                className="w-auto h-[22px] md:h-9 rounded-lg"
+                className="w-auto h-[15px] md:h-[30px] rounded-lg"
                 style={{ width: "auto", height: "auto" }}
                 priority
               />

@@ -72,7 +72,7 @@ const Footer = () => {
               alt="Shakara Beauty Lounge"
               width={200}
               height={60}
-              className="object-contain w-auto h-6 md:h-8 rounded-lg"
+                className="object-contain w-auto h-[10px] md:h-8 rounded-lg"
               style={{ width: 'auto', height: 'auto' }}
             />
             <div className="flex items-center gap-2.5 md:hidden">
