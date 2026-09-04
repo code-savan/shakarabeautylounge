@@ -4,7 +4,7 @@ import { MessageCircleMore, X } from 'lucide-react';
 import React, { useState } from 'react';
 import igicon from '../../public/igicon.png';
 
-const ChatBot = () => {
+const ChatBot = ({ positionClass = "bottom-[31px] sm:bottom-5" }: { positionClass?: string }) => {
   const [isOpen, setIsOpen] = useState(false);
 
   const handleWhatsAppClick = () => {
@@ -16,7 +16,7 @@ const ChatBot = () => {
   };
 
   return (
-    <div className="fixed bottom-24 sm:bottom-5 right-5 z-[100]">
+    <div className={`fixed ${positionClass} right-5 z-[100]`}>
       {/* Popup Menu */}
       {isOpen && (
         <div className="absolute bottom-20 right-0 bg-white rounded-2xl shadow-2xl p-4 w-64 mb-2 animate-in fade-in slide-in-from-bottom-4 duration-200">

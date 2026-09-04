@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { Poppins } from 'next/font/google';
-import Header from "../components/Header";
+import { useRouter } from 'next/navigation';
 import Footer from "../components/Footer";
 import ChatBot from "../components/ChatBot";
 
@@ -110,13 +110,24 @@ function generateRef(): string {
   return 'SBL-' + Date.now().toString(36).toUpperCase() + '-' + Math.random().toString(36).substring(2, 8).toUpperCase();
 }
 
+function dateKey(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function parseKey(key: string): Date {
+  return new Date(key + 'T12:00:00');
+}
+
+const stepLabels = ['Services', 'Date & time', 'Your details', 'Payment'];
+
 export default function BookingPage() {
+  const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
   const [serviceSearch, setServiceSearch] = useState('');
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedTime, setSelectedTime] = useState('');
-  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [selectedCategory, setSelectedCategory] = useState('All');
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -127,7 +138,6 @@ export default function BookingPage() {
   const [submitted, setSubmitted] = useState(false);
   const [submissionError, setSubmissionError] = useState('');
   const [paymentType, setPaymentType] = useState<'deposit' | 'full'>('deposit');
-  const [isMobileExpanded, setIsMobileExpanded] = useState(false);
   const [paystackReady, setPaystackReady] = useState(false);
   const [isPaying, setIsPaying] = useState(false);
 
@@ -151,75 +161,85 @@ export default function BookingPage() {
       .catch(() => setPaystackReady(false));
   }, []);
 
-  const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'];
-  const weekdayNames = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
-
-  const getDaysInMonth = (date: Date) => {
-    const year = date.getFullYear();
-    const month = date.getMonth();
-    const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month + 1, 0);
-    const daysInMonth = lastDay.getDate();
-    const startDayOfWeek = firstDay.getDay();
-    const days = [];
-    for (let i = 0; i < startDayOfWeek; i++) days.push(null);
-    for (let i = 1; i <= daysInMonth; i++) days.push(new Date(year, month, i));
-    return days;
-  };
-
-  const isSameDay = (d1: Date, d2: Date) =>
-    d1.getFullYear() === d2.getFullYear() && d1.getMonth() === d2.getMonth() && d1.getDate() === d2.getDate();
-  const isToday = (date: Date) => isSameDay(date, new Date());
-  const isPastDate = (date: Date) => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    return date < today;
-  };
-  const formatDateKey = (date: Date) => date.toISOString().split('T')[0];
-  const formatPrice = (price: number) => '₦' + price.toLocaleString();
-
-  const [selectedCategory, setSelectedCategory] = useState('All');
   const categories = ['All', ...Array.from(new Set(services.map(s => s.category)))];
 
-  const filteredServices = services.filter(s =>
-    (selectedCategory === 'All' || s.category === selectedCategory) &&
-    s.name.toLowerCase().includes(serviceSearch.toLowerCase()) &&
-    !selectedServices.includes(s.id)
-  );
+  const groupedServices = categories
+    .filter(c => c !== 'All')
+    .map(cat => ({
+      category: cat,
+      items: services.filter(s =>
+        s.category === cat &&
+        (selectedCategory === 'All' || selectedCategory === cat) &&
+        s.name.toLowerCase().includes(serviceSearch.toLowerCase())
+      )
+    }))
+    .filter(g => g.items.length > 0);
 
   const totalPrice = selectedServices.reduce((sum, id) => {
     const service = services.find(s => s.id === id);
     return sum + (service?.price || 0);
   }, 0);
 
-  const amountToPay = totalPrice <= 10000 ? totalPrice : paymentType === 'deposit' ? 10000 : totalPrice;
+  const totalDuration = selectedServices.reduce((sum, id) => {
+    const service = services.find(s => s.id === id);
+    const mins = service ? parseInt(service.duration) || 0 : 0;
+    return sum + mins;
+  }, 0);
 
-  const addService = (id: string) => {
-    if (!selectedServices.includes(id)) {
-      setSelectedServices([...selectedServices, id]);
-    }
+  const amountToPay = totalPrice <= 10000 ? totalPrice : paymentType === 'deposit' ? 10000 : totalPrice;
+  const formatPrice = (price: number) => '₦' + price.toLocaleString();
+
+  const next21Days: Date[] = Array.from({ length: 21 }, (_, i) => {
+    const d = new Date();
+    d.setDate(d.getDate() + i);
+    return d;
+  });
+
+  const toggleService = (id: string) => {
+    setSelectedServices(prev => prev.includes(id) ? prev.filter(s => s !== id) : [...prev, id]);
   };
+
   const removeService = (id: string) => {
     setSelectedServices(selectedServices.filter(s => s !== id));
   };
 
-  const handleNextStep = () => {
+  const goToStep = (step: number) => {
+    if (step === 1) setCurrentStep(1);
+    if (step === 2 && selectedServices.length > 0) setCurrentStep(2);
+    if (step === 3 && selectedServices.length > 0 && selectedDate && selectedTime) setCurrentStep(3);
+    if (step === 4 && selectedServices.length > 0 && selectedDate && selectedTime && formData.firstName && formData.lastName && formData.phone && formData.email) setCurrentStep(4);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleContinue = () => {
     if (currentStep < 4) {
-      const nextStep = currentStep + 1;
-      setCurrentStep(nextStep);
-      setTimeout(() => {
-        const element = document.getElementById(`step-${nextStep}`);
-        if (element) {
-          const y = element.getBoundingClientRect().top + window.scrollY - 100;
-          window.scrollTo({ top: y, behavior: 'smooth' });
-        }
-      }, 50);
+      setCurrentStep(currentStep + 1);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
 
+  const handleBack = () => {
+    if (currentStep > 1) {
+      setCurrentStep(currentStep - 1);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      router.back();
+    }
+  };
+
+  const canContinue =
+    (currentStep === 1 && selectedServices.length > 0) ||
+    (currentStep === 2 && !!(selectedDate && selectedTime)) ||
+    (currentStep === 3 && !!(formData.firstName && formData.lastName && formData.phone && formData.email));
+
+  const continueLabel =
+    currentStep === 1 ? `Continue (${selectedServices.length} selected)` :
+    currentStep === 2 ? 'Continue' :
+    currentStep === 3 ? 'Review booking' : 'Pay now';
+
   const handleSuccess = useCallback(() => {
     setSubmitted(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
 
   const handlePaystackPayment = useCallback(async () => {
@@ -270,588 +290,488 @@ export default function BookingPage() {
       const s = services.find(x => x.id === id)!;
       return `- ${s.name} (${formatPrice(s.price)})`;
     }).join('\n');
-    const whatsappMessage = `Hi Shakara Beauty Lounge!%0A%0AI have made a payment for my booking.%0A%0A*Booking Details:*%0AName: ${formData.firstName} ${formData.lastName}%0APhone: ${formData.phone}%0ADate: ${selectedDate ? new Date(selectedDate).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' }) : '-'}%0ATime: ${selectedTime}%0A%0A*Services:*%0A${servicesList}%0A%0A*Payment:*%0AAmount Paid: ${formatPrice(amountToPay)}%0ATotal: ${formatPrice(totalPrice)}%0A${paymentType === 'deposit' && totalPrice > 10000 ? 'Payment Type: Deposit (₦10,000)' : 'Payment Type: Full Payment'}%0A%0APlease confirm my booking. Thank you!`;
+    const whatsappMessage = `Hi Shakara Beauty Lounge!%0A%0AI have made a payment for my booking.%0A%0A*Booking Details:*%0AName: ${formData.firstName} ${formData.lastName}%0APhone: ${formData.phone}%0ADate: ${selectedDate ? parseKey(selectedDate).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' }) : '-'}%0ATime: ${selectedTime}%0A%0A*Services:*%0A${servicesList}%0A%0A*Payment:*%0AAmount Paid: ${formatPrice(amountToPay)}%0ATotal: ${formatPrice(totalPrice)}%0A${paymentType === 'deposit' && totalPrice > 10000 ? 'Payment Type: Deposit (₦10,000)' : 'Payment Type: Full Payment'}%0A%0APlease confirm my booking. Thank you!`;
     const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${whatsappMessage}`;
 
     return (
-      <main className={`min-h-screen bg-white ${poppins.variable} font-sans`}>
-        <Header />
-        <section className="pt-32 pb-16 px-4">
-          <div className="max-w-xl mx-auto text-center">
-            <div className="w-20 h-20 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-8">
-              <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3">
-                <polyline points="20 6 9 17 4 12"/>
-              </svg>
-            </div>
-            <h2 className="text-3xl font-semibold text-gray-900 mb-3">Payment Successful! 🎉</h2>
-            <p className="text-gray-500 mb-4">Your booking has been received.</p>
-            <p className="text-gray-400 text-sm mb-8">Please send a quick confirmation via WhatsApp so we can confirm your slot.</p>
-            <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <a
-                href={whatsappUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-full font-medium transition-colors"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.2.05-.375-.025-.524-.075-.15-.672-1.612-.922-2.206-.24-.583-.487-.51-.672-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
+      <main className={`min-h-screen bg-[#f5f5f5] ${poppins.variable} font-sans`}>
+        <section className="pt-6 pb-16 px-4">
+          <div className="max-w-xl mx-auto">
+            <div className="bg-white rounded-2xl p-8 text-center shadow-sm">
+              <div className="w-20 h-20 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-6">
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3">
+                  <polyline points="20 6 9 17 4 12"/>
                 </svg>
-                Confirm via WhatsApp
-              </a>
-              <button
-                onClick={() => window.location.reload()}
-                className="px-8 py-3 rounded-full font-medium border-2 border-gray-200 text-gray-700 hover:border-gray-400 transition-colors cursor-pointer"
-              >
-                Book Another
-              </button>
+              </div>
+              <h2 className="text-2xl font-semibold text-gray-900 mb-2">Booking confirmed</h2>
+              <p className="text-gray-500 mb-1">Thank you, {formData.firstName}. Your payment was received.</p>
+              <p className="text-gray-400 text-sm mb-6">
+                {selectedDate ? parseKey(selectedDate).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' }) : ''}{selectedTime ? ` at ${selectedTime}` : ''} · {selectedServices.length} service{selectedServices.length > 1 ? 's' : ''} · {formatPrice(totalPrice)}
+              </p>
+              <p className="text-gray-400 text-sm mb-8">Please send a quick confirmation via WhatsApp so we can lock in your slot.</p>
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                <a
+                  href={whatsappUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-full font-medium transition-colors"
+                >
+                  Confirm via WhatsApp
+                </a>
+                <button
+                  onClick={() => window.location.reload()}
+                  className="px-8 py-3 rounded-full font-medium border-2 border-gray-200 text-gray-700 hover:border-gray-400 transition-colors cursor-pointer"
+                >
+                  Book another
+                </button>
+              </div>
             </div>
           </div>
         </section>
         <Footer />
-        <ChatBot />
+        <ChatBot positionClass="bottom-[96px] sm:bottom-5" />
       </main>
     );
   }
 
   return (
-    <main className={`min-h-screen bg-white ${poppins.variable} font-sans`}>
-      <Header />
-
-      <section className="relative h-[40vh] min-h-[300px] flex items-center justify-center overflow-hidden">
-        <div className="absolute inset-0">
-          <video className="w-full h-full object-cover" src="/hero-bg.mp4" muted loop playsInline autoPlay />
-          <div className="absolute inset-0 bg-black/60" />
-          <div className="absolute inset-0 shadow-[inset_0_0_200px_rgba(0,0,0,0.5)]" />
+    <main className={`min-h-screen bg-[#f5f5f5] ${poppins.variable} font-sans`}>
+      <div className="max-w-6xl mx-auto px-4 pt-5">
+        <div className="flex items-center gap-3 mb-4">
+          <button
+            onClick={() => router.back()}
+            aria-label="Go back"
+            className="w-10 h-10 rounded-full bg-white shadow-sm flex items-center justify-center text-black hover:bg-gray-100 transition-colors cursor-pointer flex-shrink-0"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="15 18 9 12 15 6"/></svg>
+          </button>
+          <p className="font-semibold text-gray-900">Book an appointment</p>
         </div>
-        <div className="relative z-10 text-center px-4">
-          <h1 className="text-4xl md:text-5xl font-semibold text-white mb-2">Book Your Visit</h1>
-          <p className="text-white/70">Select your services and preferred time</p>
-        </div>
-      </section>
-
-      <section className="py-12 px-4" id="booking-steps-container">
-        <div className="max-w-3xl mx-auto space-y-6">
-
-          {/* Step 1: Services */}
-          <div id="step-1" className={`border rounded-2xl overflow-hidden transition-all duration-300 ${currentStep === 1 ? 'border-gray-200 shadow-[0_8px_30px_rgb(0,0,0,0.12)] bg-white' : currentStep > 1 ? 'border-gray-200 bg-white hover:border-gray-300' : 'border-gray-100 bg-gray-50 opacity-50 pointer-events-none'}`}>
-            <div
-              className={`p-6 flex items-center justify-between ${currentStep > 1 ? 'cursor-pointer' : ''}`}
-              onClick={() => currentStep > 1 && setCurrentStep(1)}
-            >
-              <div className="flex items-center gap-4">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center font-medium ${currentStep >= 1 ? 'bg-black text-white' : 'bg-gray-200 text-gray-500'}`}>
-                  {currentStep > 1 ? '✓' : '1'}
-                </div>
-                <div>
-                  <h2 className={`text-xl font-semibold ${currentStep === 1 ? 'text-gray-900' : 'text-gray-700'}`}>Choose your services</h2>
-                  {currentStep !== 1 && selectedServices.length > 0 && (
-                    <p className="text-sm text-gray-500 mt-1">{selectedServices.length} service(s) selected - {formatPrice(totalPrice)}</p>
-                  )}
-                </div>
-              </div>
-              {currentStep > 1 && <span className="text-sm text-black font-medium">Edit</span>}
+        <div className="bg-white rounded-2xl shadow-sm p-5 md:p-6 flex gap-4">
+          <img src="/logo-preview.jpg" alt="Shakara Beauty Lounge" className="w-20 h-20 md:w-24 md:h-24 rounded-xl object-cover flex-shrink-0" />
+          <div className="min-w-0">
+            <div className="flex items-center gap-1.5">
+              <h1 className="text-xl md:text-2xl font-semibold text-gray-900 truncate">Shakara Beauty Lounge</h1>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="#1a73e8" className="flex-shrink-0"><path d="M12 2l2.4 2.4 3.4-.5.9 3.3 3 1.7-1.4 3.1 1.4 3.1-3 1.7-.9 3.3-3.4-.5L12 22l-2.4-2.4-3.4.5-.9-3.3-3-1.7L3.7 12 2.3 8.9l3-1.7.9-3.3 3.4.5L12 2z"/><path d="M10.5 13.5l-2-2-1 1 3 3 5-5-1-1-4 4z" fill="white"/></svg>
             </div>
+            <div className="flex items-center gap-1.5 mt-1">
+              <span className="font-semibold text-gray-900 text-sm">5.0</span>
+              <div className="flex gap-0.5">
+                {[...Array(5)].map((_, i) => (
+                  <svg key={i} width="13" height="13" viewBox="0 0 24 24" fill="#FBBC04"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                ))}
+              </div>
+              <span className="text-sm text-gray-500">(32)</span>
+            </div>
+            <p className="text-sm text-gray-500 mt-1.5 truncate">Kingfem GA247, Wuse II, Abuja</p>
+            <p className="text-sm mt-1 flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-green-500 inline-block" />
+              <span className="text-gray-600">Open</span>
+              <span className="text-gray-400">· Mon - Sat: 9AM - 7PM</span>
+            </p>
+          </div>
+        </div>
 
-            <div className={`transition-all duration-300 ${currentStep === 1 ? 'block' : 'hidden'}`}>
-              <div className="p-6 pt-0 border-t border-gray-100">
-                <p className="text-gray-500 mb-6 mt-4">Select one or more services for your appointment</p>
+        <nav aria-label="Booking steps" className="mt-4 px-1 flex items-center gap-1.5 overflow-x-auto text-[13px] whitespace-nowrap">
+          {stepLabels.map((label, i) => {
+            const n = i + 1;
+            const active = currentStep === n;
+            const done = currentStep > n;
+            const reachable =
+              n === 1 || (n === 2 && selectedServices.length > 0) ||
+              (n === 3 && selectedServices.length > 0 && selectedDate && selectedTime) ||
+              (n === 4 && selectedServices.length > 0 && selectedDate && selectedTime);
+            return (
+              <span key={label} className="flex items-center gap-1.5">
+                {i > 0 && <span className="text-gray-300">/</span>}
+                <button
+                  onClick={() => reachable && goToStep(n)}
+                  disabled={!reachable}
+                  aria-current={active ? "step" : undefined}
+                  className={`transition-colors ${active ? 'text-gray-900 font-semibold' : done ? 'text-gray-900 font-medium' : 'text-gray-400'} ${reachable ? 'cursor-pointer hover:text-gray-900 hover:underline underline-offset-4' : 'cursor-default'}`}
+                >
+                  {label}
+                </button>
+              </span>
+            );
+          })}
+        </nav>
+      </div>
 
-                <div className="relative mb-4">
+      <div className="max-w-6xl mx-auto px-4 mt-4 pb-32 lg:pb-16 grid lg:grid-cols-[1fr_360px] gap-4 items-start">
+        <div className="min-w-0">
+          {currentStep === 1 && (
+            <div>
+              <div className="bg-white rounded-2xl shadow-sm p-4 md:p-5">
+                <div className="relative">
                   <input
                     type="text"
                     value={serviceSearch}
                     onChange={(e) => setServiceSearch(e.target.value)}
                     placeholder="Search services..."
-                    className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-black focus:ring-2 focus:ring-black/5 outline-none transition-all placeholder:text-gray-600"
+                    className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-black outline-none transition-all placeholder:text-gray-400 text-sm"
                   />
-                  <svg className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <svg className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <circle cx="11" cy="11" r="8"/>
                     <path d="m21 21-4.35-4.35"/>
                   </svg>
                 </div>
-
-                <div className="flex flex-wrap gap-2 mb-6">
+                <div className="flex gap-2 mt-3 overflow-x-auto scrollbar-hide pb-1">
                   {categories.map(cat => (
                     <button
                       key={cat}
                       onClick={() => setSelectedCategory(cat)}
-                      className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                        selectedCategory === cat
-                          ? 'bg-black text-white'
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                      }`}
+                      className={`px-4 py-2 rounded-full text-[13px] font-medium whitespace-nowrap transition-all cursor-pointer ${selectedCategory === cat ? 'bg-black text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
                     >
                       {cat}
                     </button>
                   ))}
                 </div>
+              </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {filteredServices.map(service => (
+              {groupedServices.length === 0 && (
+                <div className="bg-white rounded-2xl shadow-sm p-10 text-center text-gray-500 mt-4">
+                  No services found. Try a different search.
+                </div>
+              )}
+
+              {groupedServices.map(group => (
+                <div key={group.category} id={`cat-${group.category}`} className="bg-white rounded-2xl shadow-sm mt-4 overflow-hidden">
+                  <h3 className="px-5 pt-5 pb-1 font-semibold text-gray-900">{group.category}</h3>
+                  <p className="px-5 text-xs text-gray-400 pb-2">{group.items.length} service{group.items.length > 1 ? 's' : ''}</p>
+                  <div className="divide-y divide-gray-100">
+                    {group.items.map(service => {
+                      const added = selectedServices.includes(service.id);
+                      return (
+                        <div key={service.id} className="flex items-center gap-3 px-5 py-4 hover:bg-gray-50 transition-colors">
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-gray-900 text-[15px]">{service.name}</p>
+                            <p className="text-[13px] text-gray-500 mt-0.5">{service.duration} · {formatPrice(service.price)}</p>
+                          </div>
+                          <button
+                            onClick={() => toggleService(service.id)}
+                            aria-label={added ? `Remove ${service.name}` : `Add ${service.name}`}
+                            className={`h-9 px-4 rounded-full text-[13px] font-semibold transition-all cursor-pointer flex-shrink-0 ${added ? 'bg-green-50 text-green-700 border border-green-500' : 'bg-black text-white hover:bg-gray-800'}`}
+                          >
+                            {added ? '✓ Added' : '+ Add'}
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {currentStep === 2 && (
+            <div className="bg-white rounded-2xl shadow-sm p-5 md:p-6">
+              <h3 className="font-semibold text-gray-900 text-lg">Select date & time</h3>
+              <p className="text-sm text-gray-500 mt-1 mb-5">Choose your preferred slot · {totalDuration > 0 ? `about ${totalDuration} min total` : ''}</p>
+
+              <p className="text-sm font-medium text-gray-700 mb-3">Date</p>
+              <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-2 -mx-1 px-1">
+                {next21Days.map(d => {
+                  const key = dateKey(d);
+                  const selected = selectedDate === key;
+                  const dayName = d.toLocaleDateString('en-US', { weekday: 'short' });
+                  return (
                     <button
-                      key={service.id}
-                      onClick={() => addService(service.id)}
-                      className="group text-left p-4 border border-gray-200 rounded-xl hover:border-black hover:shadow-md transition-all bg-white"
+                      key={key}
+                      onClick={() => setSelectedDate(key)}
+                      className={`flex-shrink-0 w-[62px] py-3 rounded-xl border text-center transition-all cursor-pointer ${selected ? 'bg-black text-white border-black' : 'bg-white text-gray-700 border-gray-200 hover:border-gray-400'}`}
                     >
-                      <div className="flex justify-between items-start mb-2">
-                        <h3 className="font-medium text-gray-900 group-hover:text-black">{service.name}</h3>
-                        <span className="text-sm font-semibold text-gray-900">{formatPrice(service.price)}</span>
-                      </div>
-                      <p className="text-sm text-gray-500">{service.duration}</p>
+                      <span className={`block text-[11px] font-medium ${selected ? 'text-white/70' : 'text-gray-400'}`}>{dayName}</span>
+                      <span className="block text-lg font-semibold leading-tight">{d.getDate()}</span>
+                      <span className={`block text-[11px] ${selected ? 'text-white/70' : 'text-gray-400'}`}>{d.toLocaleDateString('en-US', { month: 'short' })}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <p className="text-sm font-medium text-gray-700 mt-6 mb-3">Available times</p>
+              {selectedDate ? (
+                <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                  {timeSlots.map(time => (
+                    <button
+                      key={time}
+                      onClick={() => setSelectedTime(time)}
+                      className={`py-3 px-2 rounded-xl text-[13px] font-medium transition-all border cursor-pointer ${selectedTime === time ? 'bg-black text-white border-black' : 'bg-white text-gray-700 border-gray-200 hover:border-gray-400'}`}
+                    >
+                      {time}
                     </button>
                   ))}
                 </div>
-
-                {filteredServices.length === 0 && (
-                  <p className="text-center text-gray-500 py-8">No services found</p>
-                )}
-
-                <div className="flex justify-end mt-8 pt-6 border-t border-gray-100">
-                  <button
-                    onClick={handleNextStep}
-                    disabled={selectedServices.length === 0}
-                    className="px-8 py-3 bg-black text-white rounded-full font-medium hover:bg-gray-800 transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
-                  >
-                    Continue
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Step 2: Date & Time */}
-          <div id="step-2" className={`border rounded-2xl overflow-hidden transition-all duration-300 ${currentStep === 2 ? 'border-gray-200 shadow-[0_8px_30px_rgb(0,0,0,0.12)] bg-white' : currentStep > 2 ? 'border-gray-200 bg-white hover:border-gray-300' : 'border-gray-100 bg-gray-50 opacity-50 pointer-events-none'}`}>
-            <div
-              className={`p-6 flex items-center justify-between ${currentStep > 2 ? 'cursor-pointer' : ''}`}
-              onClick={() => currentStep > 2 && setCurrentStep(2)}
-            >
-              <div className="flex items-center gap-4">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center font-medium ${currentStep >= 2 ? 'bg-black text-white' : 'bg-gray-200 text-gray-500'}`}>
-                  {currentStep > 2 ? '✓' : '2'}
-                </div>
-                <div>
-                  <h2 className={`text-xl font-semibold ${currentStep === 2 ? 'text-gray-900' : 'text-gray-700'}`}>Select date & time</h2>
-                  {currentStep !== 2 && selectedDate && selectedTime && (
-                    <p className="text-sm text-gray-500 mt-1">
-                      {new Date(selectedDate).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })} at {selectedTime}
-                    </p>
-                  )}
-                </div>
-              </div>
-              {currentStep > 2 && <span className="text-sm text-black font-medium">Edit</span>}
-            </div>
-
-            <div className={`transition-all duration-300 ${currentStep === 2 ? 'block' : 'hidden'}`}>
-              <div className="p-6 pt-0 border-t border-gray-100">
-                <p className="text-gray-500 mb-6 mt-4">Choose your preferred appointment slot</p>
-
-                <div className="grid lg:grid-cols-2 gap-8">
-                  <div>
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="font-medium text-gray-900">{monthNames[currentMonth.getMonth()]} {currentMonth.getFullYear()}</h3>
-                      <div className="flex gap-1">
-                        <button onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1))} className="p-2 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer">
-                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="15 18 9 12 15 6"/></svg>
-                        </button>
-                        <button onClick={() => setCurrentMonth(new Date())} className="px-3 py-2 text-sm hover:bg-gray-100 rounded-lg transition-colors cursor-pointer">Today</button>
-                        <button onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1))} className="p-2 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer">
-                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 18 15 12 9 6"/></svg>
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="border border-gray-200 rounded-xl p-4 bg-white">
-                      <div className="grid grid-cols-7 gap-1 mb-2">
-                        {weekdayNames.map(day => (
-                          <div key={day} className="text-center text-xs font-medium text-gray-400 py-2">{day}</div>
-                        ))}
-                      </div>
-                      <div className="grid grid-cols-7 gap-1">
-                        {getDaysInMonth(currentMonth).map((date, i) => {
-                          if (!date) return <div key={i} className="h-10" />;
-                          const key = formatDateKey(date);
-                          const selected = selectedDate === key;
-                          const today = isToday(date);
-                          const past = isPastDate(date);
-                          return (
-                            <button
-                              key={key}
-                              onClick={() => !past && setSelectedDate(key)}
-                              disabled={past}
-                              className={`h-10 rounded-lg text-sm font-medium transition-all ${
-                                selected ? 'bg-black text-white' :
-                                today ? 'bg-gray-100 text-black border border-gray-300' :
-                                past ? 'text-gray-200 cursor-not-allowed' :
-                                'text-gray-700 hover:bg-gray-100'
-                              }`}
-                            >
-                              {date.getDate()}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div>
-                    <h3 className="font-medium text-gray-900 mb-4">Available times</h3>
-                    {selectedDate ? (
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                        {timeSlots.map(time => (
-                          <button
-                            key={time}
-                            onClick={() => setSelectedTime(time)}
-                            className={`py-3 px-2 sm:px-4 rounded-xl text-sm font-medium transition-all border ${
-                              selectedTime === time
-                                ? 'bg-black text-white border-black'
-                                : 'bg-white text-gray-700 border-gray-200 hover:border-gray-400'
-                            }`}
-                          >
-                            {time}
-                          </button>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="h-full flex items-center justify-center text-gray-400 border border-gray-200 rounded-xl border-dashed min-h-[200px]">
-                        <p>Select a date first</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <div className="flex justify-between items-center mt-8 pt-6 border-t border-gray-100">
-                  <button
-                    onClick={() => setCurrentStep(1)}
-                    className="px-6 py-3 text-gray-600 hover:text-gray-900 font-medium cursor-pointer transition-colors"
-                  >
-                    Back
-                  </button>
-                  <button
-                    onClick={handleNextStep}
-                    disabled={!(selectedDate && selectedTime)}
-                    className="px-8 py-3 bg-black text-white rounded-full font-medium hover:bg-gray-800 transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
-                  >
-                    Continue
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Step 3: Details */}
-          <div id="step-3" className={`border rounded-2xl overflow-hidden transition-all duration-300 ${currentStep === 3 ? 'border-gray-200 shadow-[0_8px_30px_rgb(0,0,0,0.12)] bg-white' : currentStep > 3 ? 'border-gray-200 bg-white hover:border-gray-300' : 'border-gray-100 bg-gray-50 opacity-50 pointer-events-none'}`}>
-            <div
-              className={`p-6 flex items-center justify-between ${currentStep > 3 ? 'cursor-pointer' : ''}`}
-              onClick={() => currentStep > 3 && setCurrentStep(3)}
-            >
-              <div className="flex items-center gap-4">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center font-medium ${currentStep >= 3 ? 'bg-black text-white' : 'bg-gray-200 text-gray-500'}`}>
-                  {currentStep > 3 ? '✓' : '3'}
-                </div>
-                <div>
-                  <h2 className={`text-xl font-semibold ${currentStep === 3 ? 'text-gray-900' : 'text-gray-700'}`}>Your details</h2>
-                  {currentStep !== 3 && formData.firstName && (
-                    <p className="text-sm text-gray-500 mt-1">{formData.firstName} {formData.lastName}</p>
-                  )}
-                </div>
-              </div>
-              {currentStep > 3 && <span className="text-sm text-black font-medium">Edit</span>}
-            </div>
-
-            <div className={`transition-all duration-300 ${currentStep === 3 ? 'block' : 'hidden'}`}>
-              <div className="p-6 pt-0 border-t border-gray-100">
-                <p className="text-gray-500 mb-6 mt-4">We'll use this to confirm your booking</p>
-                <div className="max-w-lg">
-                  <div className="grid grid-cols-2 gap-4 mb-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1.5">First name</label>
-                      <input
-                        type="text"
-                        value={formData.firstName}
-                        onChange={e => setFormData({...formData, firstName: e.target.value})}
-                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-black focus:ring-2 focus:ring-black/5 outline-none transition-all placeholder:text-gray-600"
-                        placeholder="John"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1.5">Last name</label>
-                      <input
-                        type="text"
-                        value={formData.lastName}
-                        onChange={e => setFormData({...formData, lastName: e.target.value})}
-                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-black focus:ring-2 focus:ring-black/5 outline-none transition-all placeholder:text-gray-600"
-                        placeholder="Doe"
-                      />
-                    </div>
-                  </div>
-                  <div className="mb-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Phone number</label>
-                    <input
-                      type="tel"
-                      value={formData.phone}
-                      onChange={e => setFormData({...formData, phone: e.target.value})}
-                      className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-black focus:ring-2 focus:ring-black/5 outline-none transition-all placeholder:text-gray-600"
-                      placeholder="+234 000 000 0000"
-                    />
-                  </div>
-                  <div className="mb-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Email (required for payment)</label>
-                    <input
-                      type="email"
-                      value={formData.email}
-                      onChange={e => setFormData({...formData, email: e.target.value})}
-                      className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-black focus:ring-2 focus:ring-black/5 outline-none transition-all placeholder:text-gray-600"
-                      placeholder="john@example.com"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Notes (optional)</label>
-                    <textarea
-                      value={formData.notes}
-                      onChange={e => setFormData({...formData, notes: e.target.value})}
-                      rows={3}
-                      className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-black focus:ring-2 focus:ring-black/5 outline-none transition-all resize-none placeholder:text-gray-600"
-                      placeholder="Any special requests..."
-                    />
-                  </div>
-                  <div className="flex justify-between items-center mt-8 pt-6 border-t border-gray-100">
-                    <button
-                      onClick={() => setCurrentStep(2)}
-                      className="px-6 py-3 text-gray-600 hover:text-gray-900 font-medium cursor-pointer transition-colors"
-                    >
-                      Back
-                    </button>
-                    <button
-                      onClick={handleNextStep}
-                      disabled={!(formData.firstName && formData.lastName && formData.phone && formData.email)}
-                      className="px-8 py-3 bg-black text-white rounded-full font-medium hover:bg-gray-800 transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
-                    >
-                      Continue
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Step 4: Confirm & Pay */}
-          <div id="step-4" className={`border rounded-2xl overflow-hidden transition-all duration-300 ${currentStep === 4 ? 'border-gray-200 shadow-[0_8px_30px_rgb(0,0,0,0.12)] bg-white' : 'border-gray-100 bg-gray-50 opacity-50 pointer-events-none'}`}>
-            <div className="p-6 flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center font-medium ${currentStep === 4 ? 'bg-black text-white' : 'bg-gray-200 text-gray-500'}`}>4</div>
-                <h2 className={`text-xl font-semibold ${currentStep === 4 ? 'text-gray-900' : 'text-gray-700'}`}>Confirm & Pay</h2>
-              </div>
-            </div>
-
-            <div className={`transition-all duration-300 ${currentStep === 4 ? 'block' : 'hidden'}`}>
-              <div className="p-6 pt-0 border-t border-gray-100">
-                <p className="text-gray-500 mb-6 mt-4">Review your appointment and complete payment securely</p>
-
-                <div className="max-w-lg mx-auto space-y-6">
-                  {/* Booking Summary */}
-                  <div className="bg-gray-50 rounded-2xl p-6 space-y-4">
-                    <div>
-                      <p className="text-sm text-gray-500 mb-2">Services</p>
-                      <div className="space-y-2">
-                        {selectedServices.map(id => {
-                          const s = services.find(x => x.id === id)!;
-                          return (
-                            <div key={id} className="flex justify-between items-center">
-                              <span className="text-gray-900">{s.name}</span>
-                              <span className="text-gray-700">{formatPrice(s.price)}</span>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                    <div className="border-t border-gray-200 pt-4">
-                      <div className="flex justify-between items-center">
-                        <span className="text-gray-500">Date</span>
-                        <span className="text-gray-900">
-                          {selectedDate ? new Date(selectedDate).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' }) : '-'}
-                        </span>
-                      </div>
-                      <div className="flex justify-between items-center mt-2">
-                        <span className="text-gray-500">Time</span>
-                        <span className="text-gray-900">{selectedTime}</span>
-                      </div>
-                    </div>
-
-                    <div className="border-t border-gray-200 pt-4">
-                      <div className="flex justify-between items-center">
-                        <span className="text-gray-500">Name</span>
-                        <span className="text-gray-900">{formData.firstName} {formData.lastName}</span>
-                      </div>
-                      <div className="flex justify-between items-center mt-2">
-                        <span className="text-gray-500">Phone</span>
-                        <span className="text-gray-900">{formData.phone}</span>
-                      </div>
-                    </div>
-
-                    <div className="border-t border-gray-200 pt-4">
-                      <div className="flex justify-between items-center">
-                        <span className="font-semibold text-gray-900">Total</span>
-                        <span className="text-2xl font-semibold text-gray-900">{formatPrice(totalPrice)}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Payment Rules */}
-                  <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
-                    <p className="text-sm text-amber-800">
-                      <span className="font-semibold">Payment Policy:</span>
-                      {totalPrice <= 10000 ? (
-                        <> Services ₦10,000 and below require <span className="font-semibold">100% payment</span>.</>
-                      ) : (
-                        <> Services above ₦10,000: Pay <span className="font-semibold">₦10,000 deposit</span> to lock your slot, or pay the full amount.</>
-                      )}
-                    </p>
-                  </div>
-
-                  {/* Payment Type Selection */}
-                  {totalPrice > 10000 && (
-                    <div className="space-y-3">
-                      <p className="text-sm font-medium text-gray-700">Choose payment option:</p>
-                      <div className="grid grid-cols-2 gap-3">
-                        <button
-                          type="button"
-                          className={`p-4 rounded-xl border-2 text-left transition-all ${paymentType === 'deposit' ? 'border-black bg-black/5' : 'border-gray-200 hover:border-gray-300'}`}
-                          onClick={() => setPaymentType('deposit')}
-                        >
-                          <p className="font-semibold text-gray-900">₦10,000 Deposit</p>
-                          <p className="text-xs text-gray-500 mt-1">Lock your slot</p>
-                        </button>
-                        <button
-                          type="button"
-                          className={`p-4 rounded-xl border-2 text-left transition-all ${paymentType === 'full' ? 'border-black bg-black/5' : 'border-gray-200 hover:border-gray-300'}`}
-                          onClick={() => setPaymentType('full')}
-                        >
-                          <p className="font-semibold text-gray-900">Full Payment</p>
-                          <p className="text-xs text-gray-500 mt-1">{formatPrice(totalPrice)}</p>
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Amount to Pay */}
-                  <div className="bg-black text-white rounded-2xl p-6">
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <p className="text-sm text-white/70">Amount to Pay</p>
-                        <p className="text-xs text-white/50 mt-1">
-                          {paymentType === 'deposit' ? 'Deposit to lock slot' : 'Full payment required'}
-                        </p>
-                      </div>
-                      <span className="text-3xl font-bold">{formatPrice(amountToPay)}</span>
-                    </div>
-                  </div>
-
-                  {/* Error Message */}
-                  {submissionError && (
-                    <div className="bg-red-50 border border-red-200 rounded-xl p-4">
-                      <p className="text-sm text-red-700">{submissionError}</p>
-                    </div>
-                  )}
-
-                  {/* Pay with Paystack */}
-                  {!paystackReady && (
-                    <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-                      <p className="text-sm text-blue-700">Loading payment gateway...</p>
-                    </div>
-                  )}
-
-                  <button
-                    onClick={handlePaystackPayment}
-                    disabled={!paystackReady || isPaying}
-                    className="w-full bg-[#0ba360] hover:bg-[#089254] text-white py-4 rounded-full font-medium transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-                  >
-                    {isPaying ? (
-                      <>
-                        <svg className="animate-spin h-5 w-5 text-white" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                        </svg>
-                        Processing...
-                      </>
-                    ) : (
-                      <>
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                        </svg>
-                        Pay {formatPrice(amountToPay)} with Paystack
-                      </>
-                    )}
-                  </button>
-
-                  <p className="text-xs text-gray-500 text-center">
-                    Secure payment powered by Paystack. Your payment information is encrypted.
-                  </p>
-                </div>
-
-                <div className="flex justify-between items-center mt-8 pt-6 border-t border-gray-100">
-                  <button
-                    onClick={() => setCurrentStep(3)}
-                    className="px-6 py-3 text-gray-600 hover:text-gray-900 font-medium cursor-pointer transition-colors"
-                  >
-                    Back
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <Footer />
-      <ChatBot />
-
-      {selectedServices.length > 0 && currentStep === 1 && (
-        <div className={`fixed z-50 transition-all duration-300 bg-white border border-gray-100 shadow-[0_-8px_30px_rgba(0,0,0,0.12)] sm:shadow-[0_8px_30px_rgb(0,0,0,0.12)] ${
-          'bottom-0 left-0 right-0 rounded-t-3xl sm:bottom-6 sm:left-6 sm:right-auto sm:w-80 sm:rounded-3xl'
-        }`}>
-          <div
-            className="p-6 flex items-center justify-between cursor-pointer"
-            onClick={() => setIsMobileExpanded(!isMobileExpanded)}
-          >
-            <div>
-              <p className="text-sm font-medium text-gray-900">Selected Services ({selectedServices.length})</p>
-              <p className="text-sm font-semibold text-gray-900 mt-0.5">{formatPrice(totalPrice)}</p>
-            </div>
-            <button
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gray-50 hover:bg-gray-100 text-xs font-medium text-gray-700 transition-colors"
-              onClick={(e) => {
-                e.stopPropagation();
-                setIsMobileExpanded(!isMobileExpanded);
-              }}
-            >
-              {isMobileExpanded ? (
-                <><span>Compress</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="18 15 12 9 6 15"></polyline></svg></>
               ) : (
-                <><span>Expand</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9"></polyline></svg></>
+                <div className="text-gray-400 border border-dashed border-gray-200 rounded-xl min-h-[120px] flex items-center justify-center text-sm">
+                  Select a date first
+                </div>
               )}
-            </button>
-          </div>
-          <div className={`overflow-hidden transition-all duration-300 ${isMobileExpanded ? 'max-h-[60vh] overflow-y-auto' : 'max-h-0'}`}>
-            <div className="p-6 pt-0 border-t border-gray-100 flex flex-col gap-3 mt-2">
+
+              <button onClick={() => setCurrentStep(1)} className="mt-6 text-sm text-gray-500 hover:text-gray-900 font-medium cursor-pointer transition-colors">
+                ← Back to services
+              </button>
+            </div>
+          )}
+
+          {currentStep === 3 && (
+            <div className="bg-white rounded-2xl shadow-sm p-5 md:p-6">
+              <h3 className="font-semibold text-gray-900 text-lg">Your details</h3>
+              <p className="text-sm text-gray-500 mt-1 mb-5">We will use this to confirm your booking</p>
+              <div className="grid grid-cols-2 gap-3 mb-3">
+                <div>
+                  <label className="block text-[13px] font-medium text-gray-700 mb-1.5">First name</label>
+                  <input
+                    type="text"
+                    value={formData.firstName}
+                    onChange={e => setFormData({...formData, firstName: e.target.value})}
+                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-black outline-none transition-all placeholder:text-gray-400 text-sm"
+                    placeholder="Jane"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[13px] font-medium text-gray-700 mb-1.5">Last name</label>
+                  <input
+                    type="text"
+                    value={formData.lastName}
+                    onChange={e => setFormData({...formData, lastName: e.target.value})}
+                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-black outline-none transition-all placeholder:text-gray-400 text-sm"
+                    placeholder="Doe"
+                  />
+                </div>
+              </div>
+              <div className="mb-3">
+                <label className="block text-[13px] font-medium text-gray-700 mb-1.5">Phone number</label>
+                <input
+                  type="tel"
+                  value={formData.phone}
+                  onChange={e => setFormData({...formData, phone: e.target.value})}
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-black outline-none transition-all placeholder:text-gray-400 text-sm"
+                  placeholder="+234 000 000 0000"
+                />
+              </div>
+              <div className="mb-3">
+                <label className="block text-[13px] font-medium text-gray-700 mb-1.5">Email</label>
+                <input
+                  type="email"
+                  value={formData.email}
+                  onChange={e => setFormData({...formData, email: e.target.value})}
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-black outline-none transition-all placeholder:text-gray-400 text-sm"
+                  placeholder="jane@example.com"
+                />
+              </div>
+              <div>
+                <label className="block text-[13px] font-medium text-gray-700 mb-1.5">Notes (optional)</label>
+                <textarea
+                  value={formData.notes}
+                  onChange={e => setFormData({...formData, notes: e.target.value})}
+                  rows={3}
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-black outline-none transition-all resize-none placeholder:text-gray-400 text-sm"
+                  placeholder="Anything we should know?"
+                />
+              </div>
+              <button onClick={() => setCurrentStep(2)} className="mt-6 text-sm text-gray-500 hover:text-gray-900 font-medium cursor-pointer transition-colors">
+                ← Back to date & time
+              </button>
+            </div>
+          )}
+
+          {currentStep === 4 && (
+            <div className="space-y-4">
+              <div className="bg-white rounded-2xl shadow-sm p-5 md:p-6">
+                <h3 className="font-semibold text-gray-900 text-lg mb-4">Review & pay</h3>
+                <div className="space-y-2.5">
+                  {selectedServices.map(id => {
+                    const s = services.find(x => x.id === id)!;
+                    return (
+                      <div key={id} className="flex justify-between items-center text-sm">
+                        <span className="text-gray-900">{s.name} <span className="text-gray-400">· {s.duration}</span></span>
+                        <span className="text-gray-700 font-medium">{formatPrice(s.price)}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="border-t border-gray-100 mt-4 pt-4 space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Date</span>
+                    <span className="text-gray-900 font-medium">{selectedDate ? parseKey(selectedDate).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' }) : '-'}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Time</span>
+                    <span className="text-gray-900 font-medium">{selectedTime}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Guest</span>
+                    <span className="text-gray-900 font-medium">{formData.firstName} {formData.lastName}</span>
+                  </div>
+                </div>
+                <div className="border-t border-gray-100 mt-4 pt-4 flex justify-between items-center">
+                  <span className="font-semibold text-gray-900">Total</span>
+                  <span className="text-xl font-semibold text-gray-900">{formatPrice(totalPrice)}</span>
+                </div>
+              </div>
+
+              <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4">
+                <p className="text-[13px] text-amber-800">
+                  <span className="font-semibold">Payment policy: </span>
+                  {totalPrice <= 10000 ? (
+                    <>Bookings of ₦10,000 and below require full payment.</>
+                  ) : (
+                    <>Pay a ₦10,000 deposit to lock your slot, or pay in full.</>
+                  )}
+                </p>
+              </div>
+
+              {totalPrice > 10000 && (
+                <div className="bg-white rounded-2xl shadow-sm p-5">
+                  <p className="text-sm font-medium text-gray-700 mb-3">Payment option</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      className={`p-4 rounded-xl border-2 text-left transition-all cursor-pointer ${paymentType === 'deposit' ? 'border-black bg-black/[0.03]' : 'border-gray-200 hover:border-gray-300'}`}
+                      onClick={() => setPaymentType('deposit')}
+                    >
+                      <p className="font-semibold text-gray-900 text-sm">₦10,000 deposit</p>
+                      <p className="text-xs text-gray-500 mt-1">Lock your slot</p>
+                    </button>
+                    <button
+                      type="button"
+                      className={`p-4 rounded-xl border-2 text-left transition-all cursor-pointer ${paymentType === 'full' ? 'border-black bg-black/[0.03]' : 'border-gray-200 hover:border-gray-300'}`}
+                      onClick={() => setPaymentType('full')}
+                    >
+                      <p className="font-semibold text-gray-900 text-sm">Full payment</p>
+                      <p className="text-xs text-gray-500 mt-1">{formatPrice(totalPrice)}</p>
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {submissionError && (
+                <div className="bg-red-50 border border-red-200 rounded-2xl p-4">
+                  <p className="text-sm text-red-700">{submissionError}</p>
+                </div>
+              )}
+
+              {!paystackReady && (
+                <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4">
+                  <p className="text-sm text-blue-700">Loading secure payment...</p>
+                </div>
+              )}
+
+              <button
+                onClick={handlePaystackPayment}
+                disabled={!paystackReady || isPaying}
+                className="w-full bg-[#0ba360] hover:bg-[#089254] text-white py-4 rounded-full font-medium transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+              >
+                {isPaying ? 'Processing...' : `Pay ${formatPrice(amountToPay)} securely`}
+              </button>
+              <p className="text-xs text-gray-400 text-center">
+                Secure payment powered by Paystack · Free cancellation up to 24h before
+              </p>
+              <button onClick={() => setCurrentStep(3)} className="text-sm text-gray-500 hover:text-gray-900 font-medium cursor-pointer transition-colors">
+                ← Back to details
+              </button>
+            </div>
+          )}
+        </div>
+
+        <aside className="hidden lg:block sticky top-24 bg-white rounded-2xl shadow-sm p-5">
+          <h3 className="font-semibold text-gray-900 mb-1">Your booking</h3>
+          <p className="text-xs text-gray-400 mb-4">Shakara Beauty Lounge · Wuse II</p>
+          {selectedServices.length === 0 ? (
+            <p className="text-sm text-gray-400 py-4 text-center border border-dashed border-gray-200 rounded-xl">
+              No services selected yet
+            </p>
+          ) : (
+            <div className="space-y-3 max-h-[280px] overflow-y-auto pr-1">
               {selectedServices.map(id => {
-                const service = services.find(s => s.id === id)!;
+                const s = services.find(x => x.id === id)!;
                 return (
-                  <div key={id} className="flex justify-between items-center bg-gray-50 p-3 rounded-xl border border-gray-100/50">
-                    <div className="pr-2">
-                      <p className="text-sm font-medium text-gray-900">{service.name}</p>
-                      <p className="text-xs text-gray-500 mt-0.5">{formatPrice(service.price)}</p>
+                  <div key={id} className="flex justify-between items-start gap-2 bg-gray-50 p-3 rounded-xl">
+                    <div className="min-w-0">
+                      <p className="text-[13px] font-medium text-gray-900 truncate">{s.name}</p>
+                      <p className="text-xs text-gray-500 mt-0.5">{s.duration} · {formatPrice(s.price)}</p>
                     </div>
-                    <button onClick={(e) => { e.stopPropagation(); removeService(id); }} className="text-gray-400 hover:text-red-500 p-1.5 hover:bg-red-50 rounded-lg flex-shrink-0 cursor-pointer transition-colors">
+                    <button onClick={() => removeService(id)} aria-label={`Remove ${s.name}`} className="text-gray-400 hover:text-red-500 p-1 flex-shrink-0 cursor-pointer transition-colors">
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                     </button>
                   </div>
                 );
               })}
             </div>
+          )}
+          <div className="border-t border-gray-100 mt-4 pt-4 space-y-2 text-sm">
+            <div className="flex justify-between">
+              <span className="text-gray-500">Date</span>
+              <span className="text-gray-900 font-medium">{selectedDate ? parseKey(selectedDate).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) : '—'}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-500">Time</span>
+              <span className="text-gray-900 font-medium">{selectedTime || '—'}</span>
+            </div>
+            <div className="flex justify-between pt-2">
+              <span className="font-semibold text-gray-900">Total</span>
+              <span className="font-semibold text-gray-900">{formatPrice(totalPrice)}</span>
+            </div>
+            {currentStep === 4 && (
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-500">Due now</span>
+                <span className="font-semibold text-green-700">{formatPrice(amountToPay)}</span>
+              </div>
+            )}
           </div>
+          {currentStep < 4 ? (
+            <button
+              onClick={handleContinue}
+              disabled={!canContinue}
+              className="w-full mt-4 bg-black text-white py-3.5 rounded-full font-medium hover:bg-gray-800 transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer text-sm"
+            >
+              {continueLabel}
+            </button>
+          ) : (
+            <button
+              onClick={handlePaystackPayment}
+              disabled={!paystackReady || isPaying}
+              className="w-full mt-4 bg-[#0ba360] hover:bg-[#089254] text-white py-3.5 rounded-full font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer text-sm"
+            >
+              {isPaying ? 'Processing...' : `Pay ${formatPrice(amountToPay)}`}
+            </button>
+          )}
+          <p className="text-[11px] text-gray-400 text-center mt-3">Free cancellation up to 24h before your visit</p>
+        </aside>
+      </div>
+
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-gray-100 px-4 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-[0_-8px_30px_rgba(0,0,0,0.08)]">
+        <div className="flex items-center gap-3">
+          <div className="flex-1 min-w-0">
+            <p className="text-xs text-gray-500 truncate">
+              {selectedServices.length === 0 ? 'No services selected' : `${selectedServices.length} service${selectedServices.length > 1 ? 's' : ''} selected`}
+              {selectedDate && selectedTime ? ` · ${parseKey(selectedDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} at ${selectedTime}` : ''}
+            </p>
+            <p className="font-semibold text-gray-900">{formatPrice(currentStep === 4 ? amountToPay : totalPrice)}</p>
+          </div>
+          {currentStep < 4 ? (
+            <button
+              onClick={handleContinue}
+              disabled={!canContinue}
+              className="bg-black text-white px-8 py-3.5 rounded-full font-medium text-sm hover:bg-gray-800 transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer flex-shrink-0"
+            >
+              Continue
+            </button>
+          ) : (
+            <button
+              onClick={handlePaystackPayment}
+              disabled={!paystackReady || isPaying}
+              className="bg-[#0ba360] text-white px-6 py-3.5 rounded-full font-medium text-sm hover:bg-[#089254] transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer flex-shrink-0"
+            >
+              {isPaying ? 'Processing...' : `Pay ${formatPrice(amountToPay)}`}
+            </button>
+          )}
         </div>
-      )}
+      </div>
+
+      <Footer />
+      <ChatBot positionClass="bottom-[96px] sm:bottom-5" />
     </main>
   );
 }

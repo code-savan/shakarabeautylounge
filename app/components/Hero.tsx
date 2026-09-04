@@ -1,17 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import ContactModal from "./ContactModal";
 
 const Hero = () => {
-  const [scrolled, setScrolled] = useState(false);
-
-  useEffect(() => {
-    const handleScroll = () => {
-      setScrolled(window.scrollY > 10);
-    };
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+  const [contactOpen, setContactOpen] = useState(false);
   return (
     <section className="relative w-full h-screen min-h-[500px] md:min-h-[600px] flex flex-col justify-center overflow-hidden bg-black font-sans">
       {/* Background Video */}
@@ -31,8 +24,8 @@ const Hero = () => {
       <div className="absolute inset-0 bg-black/60 md:bg-black/70 z-10" />
 
       {/* Main Content */}
-      <main className="relative flex-1 flex flex-col justify-center items-center px-4 md:px-12 lg:px-20 max-w-[1400px] mx-auto w-full z-20 text-white pt-20">
-        <h1 className="text-5xl md:text-7xl lg:text-[120px] mb-6 md:mb-8 font-serif leading-[0.9] md:leading-[0.8] tracking-tight text-center">
+      <main className="relative flex-1 flex flex-col justify-center items-center px-3 md:px-12 max-w-[1400px] mx-auto w-full z-20 text-white pt-20">
+        <h1 className="text-6xl md:text-7xl lg:text-[120px] mb-6 md:mb-8 font-serif leading-[0.9] md:leading-[0.8] tracking-tight text-center">
           <span className="block">Shakara Beauty</span>
           <span className="block italic text-white/70">Lounge</span>
         </h1>
@@ -67,11 +60,12 @@ const Hero = () => {
             </div>
           ))}
         </div>
-        <div className="mt-6 md:mt-8 flex flex-col sm:flex-row gap-3 md:gap-4">
-          <button className="bg-white text-black px-6 md:px-8 py-2.5 md:py-3 rounded-full font-bold uppercase tracking-wider text-xs md:text-sm cursor-pointer hover:scale-105 transition-transform">
+        <div className="mt-6 md:mt-8 flex flex-row flex-wrap justify-center gap-3 md:gap-4">
+          <a href="/booking" className="inline-flex items-center justify-center gap-2 bg-white text-black pl-6 pr-5 md:px-8 py-2.5 md:py-3 rounded-full font-bold uppercase tracking-wider text-[11px] md:text-sm cursor-pointer hover:scale-105 transition-transform text-center whitespace-nowrap">
             Book Appointment
-          </button>
-          <button className="flex items-center justify-center gap-3 bg-black/50 backdrop-blur-sm text-white pl-2 pr-6 py-2 rounded-full group cursor-pointer hover:bg-black/70 transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="md:hidden"><path d="M7 17l10-10"/><path d="M7 7h10v10"/></svg>
+          </a>
+          <button onClick={() => setContactOpen(true)} className="inline-flex items-center justify-center gap-3 bg-black/50 backdrop-blur-sm text-white pl-2 pr-5 md:pr-6 py-2 rounded-full group cursor-pointer hover:bg-black/70 transition-colors whitespace-nowrap">
             <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center relative p-[2px] bg-gradient-to-tr from-yellow-400 via-red-500 to-pink-500">
               <div className="w-full h-full rounded-full bg-white flex items-center justify-center">
                 <img
@@ -81,7 +75,7 @@ const Hero = () => {
                 />
               </div>
             </div>
-            <span className="font-bold uppercase tracking-wider text-xs text-white">Send a DM</span>
+            <span className="font-bold uppercase tracking-wider text-[11px] md:text-xs text-white">Send a DM</span>
           </button>
         </div>
       </main>
@@ -91,6 +85,7 @@ const Hero = () => {
         <span className="text-sm md:text-base font-medium group-hover:mr-2 transition-all duration-300">Scroll</span>
         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="group-hover:translate-y-1 transition-transform duration-300"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg>
       </div>
+      <ContactModal open={contactOpen} onClose={() => setContactOpen(false)} />
     </section>
   );
 };

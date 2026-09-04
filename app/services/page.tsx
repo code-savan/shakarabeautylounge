@@ -329,23 +329,6 @@ export default function ServicesPage() {
           </div>
         </div>
 
-        {/* Mute Button */}
-        <button
-          onClick={handleMuteToggle}
-          className="absolute top-4 right-4 w-10 h-10 bg-black/50 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-black/70 transition-colors z-30"
-        >
-          {isMuted ? (
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <line x1="1" y1="1" x2="23" y2="23"></line>
-              <path d="M9 9v6a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"></path>
-            </svg>
-          ) : (
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
-            </svg>
-          )}
-        </button>
-
         {/* Hero Content - Centered */}
         <div className="absolute inset-0 flex flex-col justify-center items-center z-10 px-4">
           <span className="text-sm tracking-widest uppercase text-[#c9a87c] font-bold mb-4">

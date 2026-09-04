@@ -2,10 +2,22 @@
 
 import Image from "next/image";
 import { useState, useEffect } from "react";
+import { usePathname } from "next/navigation";
 
 const Header = () => {
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isMobileView, setIsMobileView] = useState(false);
+  const pathname = usePathname();
+  const transparent = !scrolled && (pathname === "/" || pathname === "/services" || (pathname === "/about" && isMobileView));
+
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 767px)");
+    const update = () => setIsMobileView(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -31,24 +43,22 @@ const Header = () => {
     { href: "/", label: "Home" },
     { href: "/about", label: "About" },
     { href: "/services", label: "Services" },
-    { href: "/booking", label: "Booking" },
   ];
 
   return (
     <>
-      <header className={`fixed w-full z-50 transition-all duration-700 ease-out ${scrolled ? "translate-y-0 opacity-100" : "-translate-y-20 opacity-0"}`}>
-        {/* Header Content */}
-        <div className="relative z-10 px-4 md:px-12 pt-4 md:pt-6 pb-2 md:pb-4">
-          <div className="bg-white rounded-xl shadow-lg px-4 md:px-6 py-2.5 flex items-center justify-between text-black max-w-[1400px] mx-auto">
-            {/* Logo (left) */}
-            <a href="/" className="flex-shrink-0">
+      <header className={`fixed w-full z-50 translate-y-0 transition-all duration-700 ease-out ${mobileMenuOpen ? "opacity-0 pointer-events-none" : "opacity-100"}`}>
+        <div className="relative z-10 px-3 md:px-12 pt-3 md:pt-6 pb-2 md:pb-4">
+          <div className={`rounded-xl px-3 md:px-6 py-2 md:py-2.5 flex items-center justify-between max-w-[1400px] mx-auto transition-all duration-500 ${transparent ? "bg-transparent shadow-none text-white" : "bg-white shadow-lg text-black"}`}>
+            <a href="/" className="flex-shrink-0 flex items-center">
               <Image
-                src="/logo.jpeg"
+                src="/logo.png"
                 alt="Shakara Beauty Lounge"
-                width={80}
-                height={80}
-                className="w-auto h-10 md:h-12"
+                width={160}
+                height={48}
+                className="w-auto h-7 md:h-10 rounded-lg"
                 style={{ width: "auto", height: "auto" }}
+                priority
               />
             </a>
 
@@ -74,18 +84,18 @@ const Header = () => {
                 aria-label="Toggle menu"
               >
                 <div className="w-6 h-5 relative flex flex-col justify-between">
-                  <span className={`w-full h-0.5 bg-black transition-all duration-300 ${mobileMenuOpen ? 'rotate-45 translate-y-2' : ''}`} />
-                  <span className={`w-full h-0.5 bg-black transition-all duration-300 ${mobileMenuOpen ? 'opacity-0' : ''}`} />
-                  <span className={`w-full h-0.5 bg-black transition-all duration-300 ${mobileMenuOpen ? '-rotate-45 -translate-y-2' : ''}`} />
+                  <span className={`w-full h-0.5 transition-all duration-300 ${transparent ? "bg-white" : "bg-black"} ${mobileMenuOpen ? 'rotate-45 translate-y-2' : ''}`} />
+                  <span className={`w-full h-0.5 transition-all duration-300 ${transparent ? "bg-white" : "bg-black"} ${mobileMenuOpen ? 'opacity-0' : ''}`} />
+                  <span className={`w-full h-0.5 transition-all duration-300 ${transparent ? "bg-white" : "bg-black"} ${mobileMenuOpen ? '-rotate-45 -translate-y-2' : ''}`} />
                 </div>
               </button>
 
               {/* Desktop CTA Button */}
               <a
                 href="/booking"
-                className="hidden md:flex items-center gap-4 bg-black text-white pl-2 pr-8 py-2 rounded-full transition-all hover:scale-105 group cursor-pointer"
+                className={`hidden md:flex items-center gap-4 pl-2 pr-8 py-2 rounded-full transition-all hover:scale-105 group cursor-pointer ${transparent ? "bg-white text-black" : "bg-black text-white"}`}
               >
-                <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-black transition-colors">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${transparent ? "bg-black text-white" : "bg-white text-black"}`}>
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="transition-transform">
                     <path d="M7 17l10-10"/>
                     <path d="M7 7h10v10"/>
@@ -98,50 +108,50 @@ const Header = () => {
         </div>
       </header>
 
-      {/* Mobile Menu Overlay - Fullscreen Sheet */}
       <div
-        className={`fixed inset-0 z-40 bg-black transition-all duration-500 md:hidden ${
+        className={`fixed inset-0 z-[60] bg-black transition-all duration-500 md:hidden ${
           mobileMenuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
         }`}
       >
-        {/* Close Button */}
-        <button
-          onClick={() => setMobileMenuOpen(false)}
-          className="absolute top-6 right-6 w-12 h-12 flex items-center justify-center text-white/60 hover:text-white transition-colors z-50"
-          aria-label="Close menu"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <line x1="18" y1="6" x2="6" y2="18"/>
-            <line x1="6" y1="6" x2="18" y2="18"/>
-          </svg>
-        </button>
-
-        <div className="h-full overflow-y-auto px-6 py-20">
-          {/* Logo */}
-          <div className="mb-12">
+        <div className="h-full overflow-y-auto px-5 pt-5 pb-10 flex flex-col">
+          <div className="flex items-center justify-between mb-8">
             <Image
-              src="/logo.jpeg"
+              src="/logo.png"
               alt="Shakara Beauty Lounge"
-              width={80}
-              height={80}
-              className="w-auto h-12 brightness-0 invert"
+              width={140}
+              height={42}
+              className="w-auto h-8 rounded-lg"
+              style={{ width: "auto", height: "auto" }}
             />
+            <button
+              onClick={() => setMobileMenuOpen(false)}
+              className="w-11 h-11 flex items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors"
+              aria-label="Close menu"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <line x1="18" y1="6" x2="6" y2="18"/>
+                <line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+            </button>
           </div>
 
-          {/* Main Navigation */}
-          <nav className="mb-12">
-            <ul className="space-y-1">
+          <nav className="mb-8">
+            <ul>
               {navLinks.map((link, index) => (
                 <li key={link.href}>
                   <a
                     href={link.href}
                     onClick={() => setMobileMenuOpen(false)}
-                    className={`block py-4 text-3xl font-semibold text-white uppercase tracking-wider hover:text-[#c9a87c] transition-all duration-300 transform border-b border-white/10 ${
+                    className={`flex items-center justify-between py-3 text-xl font-semibold text-white uppercase tracking-wider hover:text-[#c9a87c] transition-all duration-300 transform border-b border-white/10 ${
                       mobileMenuOpen ? 'translate-x-0 opacity-100' : '-translate-x-4 opacity-0'
                     }`}
                     style={{ transitionDelay: `${index * 75}ms` }}
                   >
                     {link.label}
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="opacity-40">
+                      <path d="M7 17l10-10"/>
+                      <path d="M7 7h10v10"/>
+                    </svg>
                   </a>
                 </li>
               ))}

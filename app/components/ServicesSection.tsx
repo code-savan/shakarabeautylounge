@@ -260,7 +260,7 @@ const ServicesSection = () => {
   return (
     <section id="services-section" className={`w-full bg-[#1a1512] py-24 overflow-hidden ${poppins.variable} font-sans`}>
       {/* Section Header */}
-      <div className="px-4 md:px-20 mb-12">
+      <div className="px-3 md:px-12 mb-12">
         <span className="text-sm tracking-widest uppercase text-[#c9a87c] font-semibold mb-4 block">
           What We Do
         </span>
@@ -273,8 +273,8 @@ const ServicesSection = () => {
       </div>
 
       {/* Horizontal Scroll Container - No Scrollbar */}
-      <div className="pl-4 md:pl-20 overflow-x-auto scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-        <div className="flex gap-4 md:gap-6 pb-4 pr-4 md:pr-20" style={{ width: 'max-content' }}>
+      <div className="pl-3 md:pl-12 overflow-x-auto scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+        <div className="flex gap-4 md:gap-6 pb-4 pr-3 md:pr-12" style={{ width: 'max-content' }}>
           {services.map((service, index) => (
             <div
               key={index}
@@ -384,7 +384,7 @@ const ServicesSection = () => {
       </div>
 
       {/* CTA - Stylish Button */}
-      <div className="px-4 md:px-20 mt-12 text-center md:text-left">
+      <div className="px-3 md:px-12 mt-12 text-center md:text-left">
         <button className="group relative inline-flex items-center gap-3 bg-transparent border-2 border-[#c9a87c] text-[#c9a87c] px-8 py-4 rounded-full overflow-hidden transition-all duration-300 hover:text-[#1a1512] cursor-pointer">
           <span className="absolute inset-0 bg-[#c9a87c] transform -translate-x-full group-hover:translate-x-0 transition-transform duration-300 ease-out"></span>
           <span className="relative font-semibold uppercase tracking-wider text-xs">

@@ -94,41 +94,32 @@ export default function AboutPage() {
             />
             <div className="absolute inset-0 bg-black/50" />
 
-            {/* Video Controls - Mobile */}
-            <div className="absolute bottom-8 left-4 right-4 z-30">
-              <div className="flex items-center justify-between">
-                <button
-                  onClick={togglePlay}
-                  className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white hover:bg-white/30 transition-colors"
-                >
-                  {isPlaying ? (
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="none">
-                      <rect x="6" y="4" width="4" height="16" rx="1"/>
-                      <rect x="14" y="4" width="4" height="16" rx="1"/>
-                    </svg>
-                  ) : (
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="none">
-                      <polygon points="5 3 19 12 5 21 5 3"/>
-                    </svg>
-                  )}
-                </button>
-
-                <button
-                  onClick={toggleMute}
-                  className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white hover:bg-white/30 transition-colors"
-                >
+            <div className="absolute bottom-8 left-0 right-0 z-30 flex justify-start px-4">
+              <button
+                onClick={toggleMute}
+                aria-label={isMuted ? "Unmute video" : "Mute video"}
+                className={`flex items-center gap-2.5 rounded-full pl-3 pr-5 py-2.5 backdrop-blur-md transition-all active:scale-95 ${isMuted ? "bg-white text-black shadow-xl" : "bg-black/50 text-white border border-white/30"}`}
+              >
+                <span className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 ${isMuted ? "bg-black text-white" : "bg-white text-black"}`}>
                   {isMuted ? (
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <line x1="1" y1="1" x2="23" y2="23"/>
-                      <path d="M9 9v6a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"/>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+                      <line x1="23" y1="9" x2="17" y2="15" />
+                      <line x1="17" y1="9" x2="23" y2="15" />
                     </svg>
                   ) : (
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+                      <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+                      <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
                     </svg>
                   )}
-                </button>
-              </div>
+                </span>
+                <span className="text-sm font-semibold whitespace-nowrap">
+                  {isMuted ? "Tap for sound" : "Sound on"}
+                </span>
+                {isMuted && <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse flex-shrink-0" />}
+              </button>
             </div>
           </>
         )}
@@ -140,47 +131,50 @@ export default function AboutPage() {
             {/* Main Content */}
             <div className="flex-1 flex flex-col justify-center py-12 lg:py-0">
               {/* Location */}
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-gray-100 w-fit mb-6">
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-600">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/15 backdrop-blur-sm lg:bg-gray-100 lg:backdrop-blur-none w-fit mb-6">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-white/80 lg:text-gray-600">
                   <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/>
                   <circle cx="12" cy="10" r="3"/>
                 </svg>
-                <span className="text-sm text-gray-600 font-medium">
+                <span className="text-sm text-white lg:text-gray-600 font-medium">
                   Wuse II, Abuja, Nigeria
                 </span>
               </div>
 
               {/* Heading */}
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-semibold leading-tight text-gray-900 mb-6">
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-semibold leading-tight text-white lg:text-gray-900 mb-6">
                 Beauty & Wellness<br/>
-                <span className="text-[#c9a87c]">Redefined</span> in Abuja
+                <span className="text-[#e8cfa8] lg:text-[#c9a87c]">Redefined</span> in Abuja
               </h1>
 
               {/* Description */}
-              <p className="text-gray-500 max-w-md mb-8">
+              <p className="text-white/80 lg:text-gray-500 max-w-md mb-8">
                 Experience luxury beauty services tailored to you. From expert hair styling to rejuvenating massages, we bring out your natural beauty.
               </p>
 
-              {/* Social Proof */}
               <div className="flex items-center gap-3 mb-8">
                 <div className="flex -space-x-2">
-                  {[1, 2, 3, 4].map((i) => (
-                    <div key={i} className="w-8 h-8 rounded-full bg-gray-200 border-2 border-white flex items-center justify-center text-gray-600 text-xs font-semibold">
-                      {String.fromCharCode(64 + i)}
+                  {[
+                    { initials: "MO", bg: "bg-purple-600" },
+                    { initials: "YF", bg: "bg-pink-600" },
+                    { initials: "TO", bg: "bg-amber-600" },
+                    { initials: "OA", bg: "bg-emerald-600" },
+                  ].map((c) => (
+                    <div key={c.initials} className={`w-8 h-8 rounded-full ${c.bg} border-2 border-white/40 lg:border-white flex items-center justify-center text-white text-[10px] font-bold`}>
+                      {c.initials}
                     </div>
                   ))}
                 </div>
-                <span className="text-sm text-gray-500">
+                <span className="text-sm text-white/70 lg:text-gray-500">
                   Trusted by 1000+ clients
                 </span>
               </div>
 
-              {/* CTA Button */}
               <a
                 href="/booking"
-                className="inline-flex items-center gap-3 bg-black text-white pl-2 pr-6 py-2 rounded-full hover:bg-gray-800 transition-colors w-fit"
+                className="inline-flex items-center gap-3 bg-white text-black lg:bg-black lg:text-white pl-2 pr-6 py-2 rounded-full hover:bg-gray-100 lg:hover:bg-gray-800 transition-colors w-fit"
               >
-                <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-black">
+                <div className="w-8 h-8 rounded-full bg-black text-white lg:bg-white lg:text-black flex items-center justify-center">
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M7 17l10-10"/>
                     <path d="M7 7h10v10"/>
@@ -206,41 +200,32 @@ export default function AboutPage() {
                 autoPlay
               />
 
-              {/* Desktop Video Controls */}
-              <div className="absolute bottom-8 left-8 right-8 z-30">
-                <div className="flex items-center justify-between">
-                  <button
-                    onClick={togglePlay}
-                    className="w-12 h-12 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/70 transition-colors"
-                  >
-                    {isPlaying ? (
-                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="none">
-                        <rect x="6" y="4" width="4" height="16" rx="1"/>
-                        <rect x="14" y="4" width="4" height="16" rx="1"/>
-                      </svg>
-                    ) : (
-                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="none">
-                        <polygon points="5 3 19 12 5 21 5 3"/>
-                      </svg>
-                    )}
-                  </button>
-
-                  <button
-                    onClick={toggleMute}
-                    className="w-10 h-10 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/70 transition-colors"
-                  >
+              <div className="absolute bottom-8 left-8 z-30">
+                <button
+                  onClick={toggleMute}
+                  aria-label={isMuted ? "Unmute video" : "Mute video"}
+                  className={`flex items-center gap-2.5 rounded-full pl-3 pr-5 py-2.5 backdrop-blur-md transition-all active:scale-95 ${isMuted ? "bg-white text-black shadow-xl" : "bg-black/50 text-white border border-white/30"}`}
+                >
+                  <span className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 ${isMuted ? "bg-black text-white" : "bg-white text-black"}`}>
                     {isMuted ? (
-                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <line x1="1" y1="1" x2="23" y2="23"/>
-                        <path d="M9 9v6a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"/>
+                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+                        <line x1="23" y1="9" x2="17" y2="15" />
+                        <line x1="17" y1="9" x2="23" y2="15" />
                       </svg>
                     ) : (
-                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+                        <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+                        <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
                       </svg>
                     )}
-                  </button>
-                </div>
+                  </span>
+                  <span className="text-sm font-semibold whitespace-nowrap">
+                    {isMuted ? "Tap for sound" : "Sound on"}
+                  </span>
+                  {isMuted && <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse flex-shrink-0" />}
+                </button>
               </div>
             </div>
           </div>
