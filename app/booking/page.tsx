@@ -409,7 +409,7 @@ export default function BookingPage() {
                     value={serviceSearch}
                     onChange={(e) => setServiceSearch(e.target.value)}
                     placeholder="Search services..."
-                    className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-black outline-none transition-all placeholder:text-gray-400 text-sm"
+                    className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-black outline-none transition-all placeholder:text-gray-400 text-gray-900 text-sm"
                   />
                   <svg className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <circle cx="11" cy="11" r="8"/>
@@ -525,7 +525,7 @@ export default function BookingPage() {
                     type="text"
                     value={formData.firstName}
                     onChange={e => setFormData({...formData, firstName: e.target.value})}
-                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-black outline-none transition-all placeholder:text-gray-400 text-sm"
+                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-black outline-none transition-all placeholder:text-gray-400 text-gray-900 text-sm"
                     placeholder="Jane"
                   />
                 </div>
@@ -535,7 +535,7 @@ export default function BookingPage() {
                     type="text"
                     value={formData.lastName}
                     onChange={e => setFormData({...formData, lastName: e.target.value})}
-                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-black outline-none transition-all placeholder:text-gray-400 text-sm"
+                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-black outline-none transition-all placeholder:text-gray-400 text-gray-900 text-sm"
                     placeholder="Doe"
                   />
                 </div>
@@ -546,7 +546,7 @@ export default function BookingPage() {
                   type="tel"
                   value={formData.phone}
                   onChange={e => setFormData({...formData, phone: e.target.value})}
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-black outline-none transition-all placeholder:text-gray-400 text-sm"
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-black outline-none transition-all placeholder:text-gray-400 text-gray-900 text-sm"
                   placeholder="+234 000 000 0000"
                 />
               </div>
@@ -556,7 +556,7 @@ export default function BookingPage() {
                   type="email"
                   value={formData.email}
                   onChange={e => setFormData({...formData, email: e.target.value})}
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-black outline-none transition-all placeholder:text-gray-400 text-sm"
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-black outline-none transition-all placeholder:text-gray-400 text-gray-900 text-sm"
                   placeholder="jane@example.com"
                 />
               </div>
