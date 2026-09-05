@@ -98,27 +98,27 @@ export default function AboutPage() {
               <button
                 onClick={toggleMute}
                 aria-label={isMuted ? "Unmute video" : "Mute video"}
-                className={`flex items-center gap-2.5 rounded-full pl-3 pr-5 py-2.5 backdrop-blur-md transition-all active:scale-95 ${isMuted ? "bg-white text-black shadow-xl" : "bg-black/50 text-white border border-white/30"}`}
+                className={`flex items-center gap-1.5 rounded-full pl-2 pr-3 py-1.5 backdrop-blur-md transition-all active:scale-95 ${isMuted ? "bg-white text-black shadow-xl" : "bg-black/50 text-white border border-white/30"}`}
               >
-                <span className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 ${isMuted ? "bg-black text-white" : "bg-white text-black"}`}>
+                <span className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 ${isMuted ? "bg-black text-white" : "bg-white text-black"}`}>
                   {isMuted ? (
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
                       <line x1="23" y1="9" x2="17" y2="15" />
                       <line x1="17" y1="9" x2="23" y2="15" />
                     </svg>
                   ) : (
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
                       <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
                       <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
                     </svg>
                   )}
                 </span>
-                <span className="text-sm font-semibold whitespace-nowrap">
+                <span className="text-xs font-semibold whitespace-nowrap">
                   {isMuted ? "Tap for sound" : "Sound on"}
                 </span>
-                {isMuted && <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse flex-shrink-0" />}
+                {isMuted && <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse flex-shrink-0" />}
               </button>
             </div>
           </>

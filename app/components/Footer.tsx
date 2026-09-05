@@ -67,14 +67,13 @@ const Footer = () => {
 
         <div className="mt-10 flex flex-col md:flex-row md:items-start gap-8">
           <div className="flex items-center justify-between md:justify-start md:gap-6 flex-shrink-0">
-            <Image
-              src="/logo.png"
-              alt="Shakara Beauty Lounge"
-              width={200}
-              height={60}
-                className="object-contain w-auto h-[10px] md:h-8 rounded-lg"
-              style={{ width: 'auto', height: 'auto' }}
-            />
+              <Image
+                src="/logo.png"
+                alt="Shakara Beauty Lounge"
+                width={200}
+                height={60}
+                className="object-contain h-10 md:h-16 w-auto rounded-lg"
+              />
             <div className="flex items-center gap-2.5 md:hidden">
               <a
                 href="https://www.instagram.com/shakarabeautylounge/"

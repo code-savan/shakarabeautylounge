@@ -56,8 +56,7 @@ const Header = () => {
                 alt="Shakara Beauty Lounge"
                 width={160}
                 height={48}
-                className="w-auto h-[15px] md:h-[30px] rounded-lg"
-                style={{ width: "auto", height: "auto" }}
+                className="h-[20px] md:h-[34px] w-auto rounded-lg"
                 priority
               />
             </a>
@@ -83,10 +82,10 @@ const Header = () => {
                 className="md:hidden p-2 -mr-2"
                 aria-label="Toggle menu"
               >
-                <div className="w-6 h-5 relative flex flex-col justify-between">
-                  <span className={`w-full h-0.5 transition-all duration-300 ${transparent ? "bg-white" : "bg-black"} ${mobileMenuOpen ? 'rotate-45 translate-y-2' : ''}`} />
-                  <span className={`w-full h-0.5 transition-all duration-300 ${transparent ? "bg-white" : "bg-black"} ${mobileMenuOpen ? 'opacity-0' : ''}`} />
-                  <span className={`w-full h-0.5 transition-all duration-300 ${transparent ? "bg-white" : "bg-black"} ${mobileMenuOpen ? '-rotate-45 -translate-y-2' : ''}`} />
+                <div className="w-5 h-[14px] relative flex flex-col justify-between">
+                  <span className={`w-full h-[2px] rounded-full transition-all duration-300 ${transparent ? "bg-white" : "bg-black"} ${mobileMenuOpen ? 'rotate-45 translate-y-[6px]' : ''}`} />
+                  <span className={`w-2/3 ml-auto h-[2px] rounded-full transition-all duration-300 ${transparent ? "bg-white" : "bg-black"} ${mobileMenuOpen ? 'opacity-0' : ''}`} />
+                  <span className={`w-full h-[2px] rounded-full transition-all duration-300 ${transparent ? "bg-white" : "bg-black"} ${mobileMenuOpen ? '-rotate-45 -translate-y-[6px]' : ''}`} />
                 </div>
               </button>
 
@@ -120,8 +119,7 @@ const Header = () => {
               alt="Shakara Beauty Lounge"
               width={140}
               height={42}
-              className="w-auto h-[26px] rounded-lg"
-              style={{ width: "auto", height: "auto" }}
+              className="h-[26px] w-auto rounded-lg"
             />
             <button
               onClick={() => setMobileMenuOpen(false)}
