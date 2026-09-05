@@ -17,7 +17,8 @@ export default function AboutPage() {
   const [isPlaying, setIsPlaying] = useState(true);
   const [isMuted, setIsMuted] = useState(true);
   const [progress, setProgress] = useState(0);
-  const videoRef = useRef<HTMLVideoElement>(null);
+  const mobileVideoRef = useRef<HTMLVideoElement>(null);
+  const desktopVideoRef = useRef<HTMLVideoElement>(null);
   const progressRef = useRef<number>(0);
 
   useEffect(() => {
@@ -31,42 +32,56 @@ export default function AboutPage() {
 
   // Progress tracking
   useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
+    const videos = [mobileVideoRef.current, desktopVideoRef.current].filter(Boolean) as HTMLVideoElement[];
+    if (videos.length === 0) return;
 
-    const updateProgress = () => {
+    const updateProgress = (video: HTMLVideoElement) => {
       if (video.duration) {
         const currentProgress = (video.currentTime / video.duration) * 100;
         setProgress(currentProgress);
       }
     };
 
-    video.addEventListener('timeupdate', updateProgress);
-    return () => video.removeEventListener('timeupdate', updateProgress);
-  }, []);
+    const handlers = videos.map((video) => {
+      const handler = () => updateProgress(video);
+      video.addEventListener('timeupdate', handler);
+      return { video, handler };
+    });
+    return () => handlers.forEach(({ video, handler }) => video.removeEventListener('timeupdate', handler));
+  }, [isMobile]);
+
+  const activeVideos = () => {
+    return [mobileVideoRef.current, desktopVideoRef.current].filter(Boolean) as HTMLVideoElement[];
+  };
 
   const togglePlay = () => {
-    const video = videoRef.current;
-    if (!video) return;
+    const videos = activeVideos();
+    if (videos.length === 0) return;
 
     if (isPlaying) {
-      video.pause();
+      videos.forEach((video) => video.pause());
     } else {
-      video.play();
+      videos.forEach((video) => { video.play().catch(() => {}); });
     }
     setIsPlaying(!isPlaying);
   };
 
   const toggleMute = () => {
-    const video = videoRef.current;
-    if (!video) return;
+    const videos = activeVideos();
+    if (videos.length === 0) return;
 
-    video.muted = !isMuted;
-    setIsMuted(!isMuted);
+    const nextMuted = !isMuted;
+    videos.forEach((video) => {
+      video.muted = nextMuted;
+      if (!nextMuted) {
+        video.play().catch(() => {});
+      }
+    });
+    setIsMuted(nextMuted);
   };
 
   const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const video = videoRef.current;
+    const video = desktopVideoRef.current;
     if (!video || !video.duration) return;
 
     const newTime = (parseFloat(e.target.value) / 100) * video.duration;
@@ -84,7 +99,7 @@ export default function AboutPage() {
         {isMobile && (
           <>
             <video
-              ref={videoRef}
+              ref={mobileVideoRef}
               className="absolute inset-0 w-full h-full object-cover"
               src="/aboutherovideo.mp4"
               muted={isMuted}
@@ -188,10 +203,11 @@ export default function AboutPage() {
           </div>
 
           {/* Right Side - Video (Desktop Only) */}
+          {!isMobile && (
           <div className="hidden lg:block relative p-4">
             <div className="absolute inset-0 rounded-[40px] overflow-hidden m-4">
               <video
-                ref={videoRef}
+                ref={desktopVideoRef}
                 className="w-full h-full object-cover"
                 src="/aboutherovideo.mp4"
                 muted={isMuted}
@@ -229,6 +245,7 @@ export default function AboutPage() {
               </div>
             </div>
           </div>
+          )}
         </div>
       </section>
 
